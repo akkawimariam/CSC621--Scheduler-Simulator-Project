@@ -1,0 +1,105 @@
+________________________________________
+Graduate Project
+Transaction Scheduling and Serializability Analysis
+Course
+Transaction Processing Systems
+Project Type
+Group Project (Groups of two students)
+________________________________________
+Project Overview
+The objective of this project is to design and implement a transaction scheduler simulator that analyzes database schedules and determines their correctness properties with respect to serializability and recoverability constraints. The project emphasizes a deep understanding of concurrency control theory, transaction correctness, and schedule equivalence as studied in advanced database systems.
+Students are free to choose:
+•	The programming language
+•	The user interface (command-line, GUI, or web-based)
+However, the theoretical correctness and rigor of the implementation will be strictly evaluated.
+________________________________________
+Functional Requirements
+1. Schedule Representation
+Your system shall accept or generate transaction schedules consisting of a sequence of operations executed by multiple transactions. Each transaction must be well-formed, satisfying the following:
+•	Begins with a START(Ti) operation
+•	Ends with exactly one of:
+o	COMMIT(Ti) or
+o	ABORT(Ti)
+•	Contains only valid operations between START and COMMIT/ABORT
+________________________________________
+2. Supported Operations
+In addition to standard database operations, the scheduler must support:
+•	READ(Ti, X)
+•	WRITE(Ti, X)
+•	INCREMENT(Ti, X)
+•	DECREMENT(Ti, X)
+Increment and decrement operations must be treated as write operations with respect to conflict detection and concurrency analysis.
+________________________________________
+3. Serializability Analysis
+The scheduler must determine whether a given schedule is:
+•	Conflict-serializable
+Notes:
+•	Serializability must be evaluated exclusively using conflict equivalence.
+•	View equivalence must not be used or assumed.
+•	The system should explicitly construct and analyze a precedence (serialization) graph.
+•	The output must clearly indicate:
+o	Whether the schedule is conflict-serializable
+o	If serializable, the equivalent serial order(s), when applicable
+________________________________________
+4. Recoverability and Correctness Properties
+For each schedule, the scheduler must determine whether it satisfies the following properties:
+1.	Recoverable Schedule
+o	A transaction commits only after all transactions whose data it has read have committed.
+2.	Avoids Cascading Aborts (ACA)
+o	Transactions read only data written by committed transactions.
+3.	Strict Schedule
+o	No transaction reads or writes a data item until the transaction that last wrote that item has committed or aborted.
+4.	Rigorous Schedule
+o	A stronger condition where neither reads nor writes are allowed on a data item until the transaction holding the last read or write lock has committed or aborted.
+The system must:
+•	Clearly state whether each property is satisfied.
+•	Provide a brief explanation or reasoning for each determination.
+________________________________________
+5. Output Requirements
+For any given schedule, the system must output:
+•	Whether the schedule is conflict-serializable
+•	Whether it is:
+o	Recoverable
+o	ACA
+o	Strict
+o	Rigorous
+•	The reasoning or conditions that lead to each conclusion
+•	Any detected violations (e.g., cycles in the precedence graph, illegal read-before-commit, etc.)
+________________________________________
+Non-Functional Requirements
+•	The implementation must be modular and extensible.
+•	Code should be well-documented, with clear separation between:
+o	Schedule parsing
+o	Conflict analysis
+o	Correctness property checks
+•	The interface should be intuitive and allow easy testing of multiple schedules.
+________________________________________
+Deliverables
+Each group must submit:
+1.	Source Code
+o	Fully functional implementation
+o	Clear build/run instructions
+2.	Project Report (PDF)
+o	Problem description
+o	Design decisions and assumptions
+o	Algorithms used for serializability and correctness checks
+o	Sample schedules and outputs
+o	Discussion of limitations and possible extensions
+3.	Demonstration
+o	Live demonstration (in the classroom) showing system functionality
+________________________________________
+Evaluation Criteria
+•	Correctness and completeness of schedule analysis
+•	Theoretical rigor in applying DBMS concurrency concepts
+•	Clarity and quality of implementation
+•	Quality of report and explanation
+•	Handling of edge cases and invalid schedules
+________________________________________
+Academic Integrity
+All submitted work must be original. While discussions of theory are encouraged, code sharing between groups is strictly prohibited. Any use of external libraries or references must be properly acknowledged.
+________________________________________
+Bonus (Optional)
+•	Visualization of precedence graphs
+•	Support for schedule generation
+•	Detection of violations with step-by-step explanation
+•	Extension to locking protocols (2PL, strict 2PL)

@@ -1,0 +1,515 @@
+   CONCURRENCY CONTROL AND RECOVERY IN DATABASE SYSTEMS
+            BERNSTEIN, HADZILACOS, GOODMAN
+
+              Chapter 1 – The Problem
+
+
+Concurrency Control = activity of coordinating actions of processes that operate in parallel, access shared data, and potentially interfere with each other.
+
+Recovery = activity of ensuring that software and hardware failures do not corrupt persistent data.
+
+Database Model assumed (an abstraction of many types of data handing systems)
+----------------------
+
+TRANSACTION = execution of program that accesses a shared 
+              database.
+
+              Must be atomic (job of concurrency control-
+              recovery to insure)
+
+              1 transactions don't interfere with each
+              other.
+              2 termination means all effects made
+  		     permanent or no effect.
+
+DATABASE  = set of named data items (each has a value)
+            The values of the DB at any time constitute 
+            the DB STATE
+
+(ITEM = word of main mem, page of disk, file, record, field)
+          - items have GRANULARITY = size of data item
+            DATABASE MANAGEMNT SYSTEM (DBMS) = hdwre-
+            sftwre modules that support commands to 
+            access data
+
+
+ 	DATABASE OPERATIONS.  2 main data access operations:
+          - Read(x) returns value stored in data item x.
+          - Write(x,val) changes value of x to val.
+
+     	DBS executes operations ATOMICALLY: as if
+         sequentially
+          - maybe actually sequential execution
+          - usually CONCURRENTLY = several overlapping in 
+            time
+          - final effect must be same as some sequential 
+            order.
+          - e.g., read(x)
+            after 1st operation, concurrently write(x,
+    		   1), read(y)after 2nd operation, write(y, 2)
+same as serial execution
+   read(x),write(x,1)read(y),write (y, 2)
+    
+DBS also supports TRANSACTION OPERATIONS: START, COMMIT, ABORT
+          - START = program tells DBS execution beginning
+          - COMMIT = program tells DBS trans terminated
+            normally and effects can be made permanent.
+          - ABORT = program tells DBS of abnormal end and
+            effects should be obliterated.
+            Assume DBS responds to Start with unique id
+          - program attaches id to each operation as it 
+            is submitted
+          - DBS view of trans is Start, DB ops 
+            (concurrent?), Commit/Abort
+- Last operation must be either a Commit or an 
+  Abort
+
+- User view of trans >=1 programs including DB
+  & trans operations
+
+COMMIT/ABORT
+ACTIVE = not yet committed or aborted (but issued the  
+         Start operation)
+UNCOMMITTED = aborted or active (started already)
+
+Abort can be trans generated (Transfer Funds example – insufficient funds) or imposed by DBS (still view abort as action of transaction)
+
+      Abort wipes out all of transaction’s effects
+       - system failure in the middle of transaction 
+         (media crash)
+  - DBS discovers it returned incorrect value to 
+    transaction
+  - unexpected values
+
+Executing a trans' Commit constitutes a guarantee by DBS that it will not abort trans & trans effects will survive subsequent failures of system (or op sys failure corrupting main memory).
+
+Cannot trust a transaction until it is Commited (may abort at any time while it is active)
+
+MESSAGES: We assume no direct communication between transactions, except through writes and reads of data
+
+- DBS controls reads and writes (ie controls
+  concurrency) 
+
+RECOVERABILITY:  All effects of committed transaction are persistent. None of effects of uncommitted transactions are persistent.
+
+ABORTS
+ 	Wiping out effects of two kinds:
+		1 – effects on data – values that trans T wrote
+			restore the data item’s old value before T
+ 		    wrote it
+2 – effects on other transactions that read
+        values written by T abort all affected
+        transactions which may trigger further 
+            abortions – cascading abort
+	        e.g., x = 1, y = 2
+	        wT(x, 2), rS(x), wS(y, 3) – T aborts
+	DBS restores x = 1
+	DBS aborts S – y = 2
+
+   T reads x from S if:
+   ------------------
+    1 T reads x after S has written x
+    2 S does not abort before T reads x
+    3 every trans (if any) writes x between S's write & 
+      T's read, aborts before T reads.
+
+   T reads from S if T reads some item from S.
+   ----------------
+
+   An Execution is RECOVERABLE if
+    - for every T that commits, T's Commit follows Commit
+      of every trans from which T reads or
+    - If T reads-from S, S commits before T commits (if
+      T commits).
+
+    - can achieve recoverability by delaying Commits
+      (dependent ones)
+	   e.g., wT(x, 2), rS(x), wS(y, 3), CommitS
+		not recoverable if T aborts => DBS can
+		1 – leave S alone – violate S’s read
+		2 – abort S which violates S’s Commit
+  	        solution delay S’s Commit
+
+   TERMINAL I/O (interactions of between trans & users)
+       - can result in indirect interaction
+         (communication and therefore dependency) between
+         transactions
+       - error is users (shouldn't trust output until
+         gets "Commit")
+       - DBS can prevent user from INDIRECT-READ problems 
+         by:
+            
+         DEFERRING output until commit.
+
+   CASCADELESSNESS (avoiding cascading aborts) achieved if DBS ensures every trans reads only values written by committed trans.
+       - delay Read(x) until all trans with Write(x,val)
+         aborted/committed
+
+- If T reads-from S then the S commits/aborts
+  before T reads.
+
+- Cascadelessness implies recoverability or ACA =>
+  RC
+
+STRICT EXECUTION
+- Many DB systems implement "Abort" by restoring "before-image" of all writes of aborting trans:
+
+            T1: 1     3          T1-COMMIT
+                |     |
+                v     |
+         X----- 1 --- |---------------------- 1 ---------
+                      v                       |
+         Y----------- 3 --- 1 --------------- |----------
+                            ^                 |
+                            |                 |
+                        T2: 1                 v  T2 ABORT 
+
+before image of Y in Write2(Y,1) =3, value to restore since, if T2 had never happened:
+
+            T1: 1     3          T1-COMMIT
+                |     |
+                v     |
+         X----- 1 --- |---------------------------------
+                      v
+         Y----------- 3 ---------------------------------
+
+
+- Abort by restoring before-images not always correct:
+                  
+
+
+
+T1: 2             ABORT
+                      |
+                      v
+         X-- 1 ------ 2 ------ 3 ------------------------
+                               ^
+                               |
+                           T2: 3
+-	Restoring before images would reset X to 1 
+-	Should be 3, the value written by T2
+-	No cascading aborts (T2 never read from T1)
+          
+
+
+
+
+
+- If further:
+                  T1: 2             ABORT-T1
+                      |
+                      v
+         X-- 1 ------ 2 ------ 3 ------------------------
+                               ^
+                               |
+                           T2: 3                ABORT-T2
+
+          - Restoring before images would reset X to 1
+            (T1 ABORTS),then 2 (T2 ABORTS).again
+ 		    incorrect (should be 1).
+- Problem is before image was written by an
+   ABORTED trans.
+- Solution:
+    Write(x,val) be delayed until all trans
+    previously written x terminate
+    (COMMIT/ABORT).
+
+
+
+
+
+STRICT executions
+-----
+       1 Delay Read(x) until all trans previously
+       Write(x) Commit/Abort(avoid cascading aborts)
+
+       2 Delay Write(x) until all trans previously
+       Write(x) Commit/Abort(achieve Recoverability by
+  	   using before images when aborting)
+
+We note here that a new execution category has been defined since this book was written:
+
+RIGOROUS executions
+--------------------
+      Strict and 3 Delay Write(x) until all trans
+      previously Read(x) Commit/Abort
+
+
+SERIALIZABILITY
+----------------
+Even if transaction is coded correctly and system does not fail, concurrent transactions can interfere with each other.(entirely due to interleaving of operations)
+
+CONCURRENCY CONTROL SYSTEM seeks to avoid these interferences.
+
+   EXAMPLES:
+   * LOST UPDATE: occurs whenever two transactions, while
+     attempting to modify a data item, both read the
+     item’s old value before either of them writes the    
+     item’s new value.
+
+       - you deposit 500, significant other deposits 1000
+       - DBMS must guard against the following happenings
+
+
+
+
+
+          @@@                             ///
+        @ - - @                         | o o |
+       @ ` - '                           ` - '
+           |     ____           _____      |
+         .( )---|$500|         |$1000|-----|-.
+       .'  |    |____|         |_____|     |  `.
+          / `.                             ^
+          ____                            | |
+          L L                             L L
+   TRANS-1 (YOUR     BALANCE   TRANS-2 (SIGNIFICANT
+    DEP OF $500)               OTHER'S DEP OF $1000)
+   =============     =======   ====================
+   0.                 $2000
+   1.       $2000<- - $2000
+   2. 500++ $2500     $2000
+   3.       $2500     $2000- ->$2000
+   4.       $2500     $2000    $3000    1000++
+   5.       $2500- -> $2500    $3000
+   6.                 $3000<- -$3000
+   7.                 $3000
+
+   * INCONSISTENT RETRIEVEAL PROBLEM: occurs whenever a
+     retrieval transaction reads one data item before
+     another transaction updates it and reads another 
+     data item after the same transaction has updated it.
+
+      - you transfer $100 from checking to savings
+-	banker running audit on your accounts
+
+
+
+
+
+
+
+
+
+
+
+
+                                      _____
+       @@@         ________        __/BANK_)
+     @ - - @      |ACCOUNTS|  _____ < $>   |
+    @ ` - '       |--------| |AUDIT| `.___'
+        |    ___  | SAVINGS| | <=====__.|
+      .( )--|100| |--------| |     |----|
+    .'  |   |___| |        | |_____     |
+       / `.       |--------|            ^
+     /_____`.     |CHECKING|           | |
+       L L        |________|           L L
+
+                CHECKING    SAVINGS
+   T-1 (TRANS) BAL        BAL        T-2 (AUDIT)
+   ==========  ===        ===        ==========
+   0.          500        800
+   1. 100 <- - 400  T-1   800
+   2. 100      400        800  T-2 - -> 800
+   3. 100      400  T-2  - - - - - - -> 400
+   4. 100      400        800           = 1200
+   5. 100 - - - - - - - ->900  T-1
+   6.          400        900           = 1200
+
+SERIALIZABLE EXECUTIONS
+------------------------
+   - Serial executions = no interleaving of the
+     operations of concurrent transactions
+   - Serial executions are correct since each transaction
+     is individually correct and transactions cannot
+     interfere.
+   - -ve: slow, poor use of system resources, low
+     throughput
+
+   Execution is SERIALIZABLE if it produces same output
+   and has the same effect on the DB state as a serial
+   one.
+
+   r.g., X = 500, y =800
+   Tr(x), Tw(x, 400), Sr(x), Tr(y), Tw(y, 900), CommitT,
+   Sr(y), Commits
+
+   Serializability is the definition of correctness in
+   this model.
+-	easy to understand
+-	avoids interleaving problems
+
+   DATABASE CONSISTENCY
+
+   - Some states of DB are defined to be consistent 
+     (e.g., Balance = sum(accounts))
+   - Designers define consistency predicates (true if DB
+     consistent)
+   - Transaction correctness requires also that trans
+     preserve consistency
+   - Serializable executions preserve consistency.
+
+   ORDERING TRANSACTIONS 
+   ----------------------
+   - If equivalence to a particular serial order is
+     required, it is the users responsibility to insure
+     that (issue 2nd only after 1st's commit is
+     acknowledged by the system).
+
+   Sometimes Serializability is not realistic. Averages
+   over large amounts of data (some inconsistent
+   retrieval tolerable) e.g., nuts and bolts Physical
+   process control (process nonterminating)
+
+DATABASE SYSTEM MODEL (abstract model – may not correspond to real system). Each level sends/receives msgs to next.
+
+
+
+
+
+
+
+
+
+
+    Trans1   Trans2   . . .    Transn
+      \     |             /
+        \   |           /
+          \ |         /
+      .---------------.
+      |TRANSACTION MGR|
+      |_______________|
+             |
+      .---------------.
+      |   SCHEDULER   |
+      |_______________|
+             |
+  .--------- |  --DATA-MGR
+  |   .---------------.  |
+  |   | RECOVERY MGR  |  |
+  |   |_______________|  |
+  |          |           |
+  |   .---------------.  |
+  |   |    CACHE MGR  |  |
+  |   |_______________|  |
+  |_________ |  _________|
+             |
+     .---------------.
+     |   DATABASE    |
+     |_______________|
+ 
+Assume centralized computer system
+  - main memory, disks, I/O devices
+  - possibly multiprocessors with access to same memory,
+    I/O
+
+ CACHE = part of volatile storage (limited size – fast
+ access) set aside for DB
+  - Managed by Cache Mgr
+  - CM moves data from MM & disk in response to request
+    from higher modules fetch(x) CM gets x disk -> cache
+    flush(x) CM puts x cache -> disk
+  - CM may flush(x) on its own to make room for directed
+    fetch(y)
+
+ 
+RECOVRY MGR 
+------------
+  - insures DB contains all effects of committed trans
+    and none of Aborted.
+  - RM supports Start, Commit, Abort, Read, Write
+  - RM uses fetch, flush of CM
+  - Designed to be resilient to loss of main memory
+    (system failure)
+  - After system recovers from failure RM must ensure DB
+    contains all effects of all committed trans and no
+    effects of trans aborted or active at failure
+  - Must be very careful about moving data between main
+    mem & disk, else:
+      1 disk does NOT contain value of x written by
+      committed trans.
+      2 disk contains x-value written by uncommitted
+      trans & not last written by a committed
+      transaction.
+  - To avoid these RM must restrict when CM flushes
+    buffers.
+  - RM may also be design to be resilient to media
+    failure.
+  - redundant copies on other disks or tape.
+  - RM + CM = DM
+
+SCHEDULER 
+----------
+  - Controls concurrent execution of trans
+
+  - Manages order in which DM can Read, Write, Commit,
+    Abort of trans.(RM is free to use any order once
+    scheduler submits an operation. Thus, handshake
+    protocol may be necessary – to ensure that certain 
+    operations execute before others)
+
+  - Goal is to order so that executions are Recoverable,
+    Serializable.
+  - Also, sometimes Cascadeless &/or Strict &/or rigorous
+    executions
+
+  To execute DB operation, TM passes operation to
+  scheduler which does 1 of 3:
+  
+  1 EXECUTE: pass to DM, notes completion (returns val on
+    Read or ack on write).
+  
+  2 REJECT: informs TM of operation rejected.
+  
+  3 DELAY: put in queue.  Later removes from queue,
+    executes/rejects.
+
+STUDY OF CONCURRENCY CONTROL IS THE STUDY OF SCHEDULER ALGORITHMS THAT ATTAIN
+SERIALIZABILITY AND / OR MORE OF
+---------------
+RECOVERABILITY,  CASCADELESSNESS,  STRICTNESS.
+--------------   ---------------   ----------
+
+(we will include RIGOROUSNESS also).
+
+TRANSACTION MANAGER
+-------------------
+- receives transaction operations from transactions and
+  passes to Scheduler.
+
+
+
+Ordering operations
+-------------------
+  - It is important to be precise about order
+    TM, Scheduler, RM, CM process operations presented
+
+  - At any time t, module (TM, RM, Scheduler, CM) is
+    allowed to execute any unexecuted operation submitted
+    to it (e.g., if scheduler submits operation p then q,
+    RM can execute q then p)
+
+- When module wants particular order enforced, issuer
+    must ensure.
+    (pass 1st, wait for ack, pass 2nd,...  called  HANDSHAKE)
+
+(alternative to handshake: have modules communicate through FIFO queues) - Too restrictive. Better performance if less ordering.
+          
+  - If 2 TMs use same queue (DDBMS case) FIFO doesn't
+    enforce order.
+
+DISTRIBUTED DATABASE SYSTEM ARCHITECTURE
+----------------------------------------
+ Collection of sites connected by a communication network (we will assume very high speed network often).
+  - Processes can exchange messages whether at same or
+    different sites.
+  - Each site is a centralized DBS which stores a portion
+    of the database.
+  - Each data item is stored at exactly 1 site (assume no
+    replication).
+  - Transaction consist of =>1 processes executed at =>1
+    sites.
+  - Transaction issues each operation to whichever TM is
+    convenient.
+  - TM can't service received Read/Write forwards to
+    other scheduler.
