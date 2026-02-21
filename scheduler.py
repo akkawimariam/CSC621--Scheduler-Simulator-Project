@@ -4,6 +4,7 @@ Analyzes: Conflict-Serializability, Recoverability, ACA, Strict, Rigorous
 """
 
 from schedule import Schedule
+from precedence_graph import PrecedenceGraph
 
 class Scheduler:
     """Analyzes schedules for various correctness properties."""
@@ -16,43 +17,142 @@ class Scheduler:
             schedule: Schedule object to analyze
         """
         self.schedule = schedule
+        self._precedence_graph = None
+
+    def get_precedence_graph(self):
+        """Build and return the precedence graph for the schedule (cached)."""
+        if self._precedence_graph is None:
+            self._precedence_graph = PrecedenceGraph(self.schedule)
+        return self._precedence_graph
     
     def is_conflict_serializable(self):
         """
         Check if the schedule is conflict-serializable.
+        Uses the precedence graph: acyclic iff conflict-serializable.
         
         Returns:
             tuple: (is_serializable: bool, serial_order: list, explanation: str)
         """
-        # TODO: Implement conflict-serializability check
-        # Should build serialization graph and check for cycles
-        return False, [], "Not yet implemented"
+        pg = self.get_precedence_graph()
+        if pg.has_cycle():
+            return False, [], (
+                "The precedence graph contains a cycle, so the schedule is not conflict-serializable."
+            )
+        serial_order = pg.topological_order()
+        order_str = ", ".join(f"T{k}" for k in serial_order) if serial_order else "N/A"
+        return True, serial_order, (
+            f"The precedence graph is acyclic. Equivalent serial order(s): {order_str}."
+        )
     
+    def _get_commit_abort_indices(self):
+        """Return (commit_index, abort_index): tid -> first index of commit/abort in schedule, or None."""
+        commit_index = {}
+        abort_index = {}
+        for idx, op in enumerate(self.schedule.operations):
+            tid = op.transaction_id
+            if op.is_commit() and tid not in commit_index:
+                commit_index[tid] = idx
+            if op.is_abort() and tid not in abort_index:
+                abort_index[tid] = idx
+        return commit_index, abort_index
+
+    def _aborted_before(self, tid, p, abort_index):
+        """True iff transaction tid has aborted before position p in the schedule."""
+        return abort_index.get(tid) is not None and abort_index[tid] < p
+
+    def _read_from_pairs(self):
+        """
+        Compute read-from pairs (Chapter 2): Ti reads x from Tj.
+        Returns list of (reader_tid, writer_tid, data_item, read_index).
+        """
+        commit_index, abort_index = self._get_commit_abort_indices()
+        ops = self.schedule.operations
+        read_from = []
+
+        for p_ri, op_ri in enumerate(ops):
+            if not op_ri.is_read() or op_ri.data_item is None:
+                continue
+            x = op_ri.data_item
+            ti = op_ri.transaction_id
+
+            # All writes on x strictly before this read (index, writer_tid)
+            writers_before = [
+                (idx, op.transaction_id)
+                for idx, op in enumerate(ops)
+                if idx < p_ri and op.data_item == x and op.is_write()
+            ]
+            if not writers_before:
+                continue
+
+            # Visible writer: last write on x before p_ri whose writer did not abort before p_ri,
+            # and any write on x between that and ri[x] is from a transaction that aborted before p_ri.
+            # Equivalent: walk backwards; first writer that did not abort before p_ri is the one Ti reads from.
+            visible_writer = None
+            for idx, tj in reversed(writers_before):
+                if self._aborted_before(tj, p_ri, abort_index):
+                    continue
+                visible_writer = tj
+                break
+
+            if visible_writer is not None:
+                read_from.append((ti, visible_writer, x, p_ri))
+
+        return read_from
+
     def is_recoverable(self):
         """
         Check if the schedule is recoverable (RC).
-        
-        A schedule is recoverable if whenever transaction Ti reads from Tj,
-        then Tj commits before Ti commits.
-        
-        Returns:
-            tuple: (is_recoverable: bool, explanation: str)
+        Chapter 2: H is RECOVERABLE if whenever Ti reads from Tj, then cj < ci.
         """
-        # TODO: Implement recoverability check
-        return False, "Not yet implemented"
-    
+        commit_index, abort_index = self._get_commit_abort_indices()
+        read_from = self._read_from_pairs()
+        violations = []
+
+        for (ti, tj, x, p_ri) in read_from:
+            ci_idx = commit_index.get(ti)
+            cj_idx = commit_index.get(tj)
+            # Ti reads from Tj. For RC we need cj < ci when both commit.
+            if ci_idx is not None:  # Ti commits
+                if cj_idx is None:
+                    violations.append(
+                        f"T{ti} reads x from T{tj} but T{tj} never commits (T{ti} commits)."
+                    )
+                elif cj_idx >= ci_idx:
+                    violations.append(
+                        f"T{ti} reads from T{tj} but c{tj} (index {cj_idx}) does not precede c{ti} (index {ci_idx})."
+                    )
+
+        if violations:
+            return False, "Not recoverable: " + "; ".join(violations)
+        if not read_from:
+            return True, "No read-from dependency between transactions; schedule is recoverable."
+        return True, "Every transaction that reads from another commits only after the writer commits (cj < ci)."
+
     def avoids_cascading_aborts(self):
         """
         Check if the schedule avoids cascading aborts (ACA).
-        
-        A schedule avoids cascading aborts if transactions read only
-        data written by committed transactions.
-        
-        Returns:
-            tuple: (is_aca: bool, explanation: str)
+        Chapter 2: H is ACA if whenever Ti reads x from Tj, then cj < ri[x].
         """
-        # TODO: Implement ACA check
-        return False, "Not yet implemented"
+        commit_index, abort_index = self._get_commit_abort_indices()
+        read_from = self._read_from_pairs()
+        violations = []
+
+        for (ti, tj, x, p_ri) in read_from:
+            cj_idx = commit_index.get(tj)
+            if cj_idx is None:
+                violations.append(
+                    f"T{ti} reads x from T{tj} but T{tj} never commits."
+                )
+            elif cj_idx >= p_ri:
+                violations.append(
+                    f"T{ti} reads x from T{tj} at index {p_ri} but c{tj} (index {cj_idx}) is not before the read."
+                )
+
+        if violations:
+            return False, "Does not avoid cascading aborts: " + "; ".join(violations)
+        if not read_from:
+            return True, "No read-from dependency; ACA holds trivially."
+        return True, "Every read is from a transaction that had already committed (cj < ri[x])."
     
     def is_strict(self):
         """
