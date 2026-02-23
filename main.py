@@ -169,45 +169,64 @@ TEST_CASES = [
 
 
 def print_analysis_results(results):
-    """Print the analysis results in a formatted way."""
+    """Print analysis results and step-by-step explanations when available."""
     print("\n" + "="*60)
-    print("SCHEDULE ANALYSIS RESULTS")
+    print("ANALYSIS RESULTS")
     print("="*60)
-    
+
     # Conflict-Serializability
     sr_result = results['conflict_serializable']
     print(f"\n[Conflict-Serializable (SR)]")
     print(f"  Result: {'YES' if sr_result['is_serializable'] else 'NO'}")
-    if sr_result['serial_order']:
+    if sr_result.get('serial_order'):
         print(f"  Serial Order: {sr_result['serial_order']}")
     print(f"  Explanation: {sr_result['explanation']}")
-    
+    if sr_result.get('steps'):
+        print("  Step-by-step:")
+        for i, s in enumerate(sr_result['steps'], 1):
+            print(f"    {i}. {s}")
+
     # Recoverability
     rc_result = results['recoverable']
     print(f"\n[Recoverable (RC)]")
     print(f"  Result: {'YES' if rc_result['is_recoverable'] else 'NO'}")
     print(f"  Explanation: {rc_result['explanation']}")
-    
+    if rc_result.get('steps'):
+        print("  Step-by-step:")
+        for i, s in enumerate(rc_result['steps'], 1):
+            print(f"    {i}. {s}")
+
     # ACA
     aca_result = results['aca']
     print(f"\n[Avoids Cascading Aborts (ACA)]")
     print(f"  Result: {'YES' if aca_result['avoids_cascading_aborts'] else 'NO'}")
     print(f"  Explanation: {aca_result['explanation']}")
-    
+    if aca_result.get('steps'):
+        print("  Step-by-step:")
+        for i, s in enumerate(aca_result['steps'], 1):
+            print(f"    {i}. {s}")
+
     # Strict
     strict_result = results['strict']
     print(f"\n[Strict (ST)]")
     print(f"  Result: {'YES' if strict_result['is_strict'] else 'NO'}")
     print(f"  Explanation: {strict_result['explanation']}")
-    
+    if strict_result.get('steps'):
+        print("  Step-by-step:")
+        for i, s in enumerate(strict_result['steps'], 1):
+            print(f"    {i}. {s}")
+
     # Rigorous
     rigorous_result = results['rigorous']
     print(f"\n[Rigorous]")
     print(f"  Result: {'YES' if rigorous_result['is_rigorous'] else 'NO'}")
     print(f"  Explanation: {rigorous_result['explanation']}")
-    
-    print("\n" + "="*60 + "\n")
+    if rigorous_result.get('steps'):
+        print("  Step-by-step:")
+        for i, s in enumerate(rigorous_result['steps'], 1):
+            print(f"    {i}. {s}")
 
+    print("\n" + "="*60 + "\n")
 
 def run_test_case(tc, graph_filename=None):
     """
