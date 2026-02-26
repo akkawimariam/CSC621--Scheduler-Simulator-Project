@@ -35,13 +35,13 @@ Represents a history/schedule:
 - Tracks all transactions in the schedule
 
 ### Scheduler
-Analyzes schedules for correctness properties:
-- `is_conflict_serializable()` - Uses precedence graph (acyclic ⇒ serializable; implements SR)
+Analyzes schedules for correctness properties (each returns result, explanation, and step-by-step steps):
+- `is_conflict_serializable()` - Uses precedence graph (acyclic ⇒ serializable; cycle path shown when not SR)
 - `get_precedence_graph()` - Returns the precedence graph for the schedule (for visualization)
-- `is_recoverable()` - Check recoverability (stub)
-- `avoids_cascading_aborts()` - Check ACA (stub)
-- `is_strict()` - Check strictness (stub)
-- `is_rigorous()` - Check rigorousness (stub)
+- `is_recoverable()` - Check recoverability (RC)
+- `avoids_cascading_aborts()` - Check ACA
+- `is_strict()` - Check strictness (ST)
+- `is_rigorous()` - Check rigorousness
 
 ### Precedence graph (precedence_graph.py)
 Builds the serialization/precedence graph from the schedule history:
@@ -128,11 +128,20 @@ Type `quit`, `exit`, or `q` at any prompt to terminate the program.
 - ✅ Basic structure and classes
 - ✅ Parser for transactions and schedules (with well-formedness: START, COMMIT/ABORT)
 - ✅ User input handling
-- ✅ Conflict-serializability analysis (precedence graph, cycle check, serial order)
+- ✅ Conflict-serializability analysis (precedence graph, cycle check, serial order, cycle path when not SR)
 - ✅ Precedence graph generation and visualization (DOT/PNG)
-- ✅ Recoverability (RC) and ACA analysis with step-by-step explanation
-- ⏳ Strict (ST) analysis (stub)
-- ⏳ Rigorous analysis (stub)
+- ✅ Recoverability (RC) and ACA analysis with step-by-step explanation and summary
+- ✅ Strict (ST) analysis with step-by-step explanation
+- ✅ Rigorous analysis with step-by-step explanation
+- ✅ Detection of violations with step-by-step explanation (bonus)
+- ✅ Visualization of precedence graphs (bonus)
+- ⏳ Schedule generation (optional bonus)
+- ⏳ Extension to locking protocols (2PL, strict 2PL) (optional bonus)
+
+## Optional Next Steps (Bonus)
+
+- Schedule generation: generate histories that aim for SR/RC/ACA/Strict/Rigorous, then classify to verify.
+- 2PL / Strict 2PL: generate schedules using a locking protocol, then classify to verify.
 
 ## Next Steps
 
@@ -149,9 +158,9 @@ Each team member can implement one of the analysis methods:
 
 | File | Role |
 |------|------|
-| **main.py** | Entry point. Shows the menu (Manual / Automatic), reads input or loads a test case, builds the schedule, runs the analyzer, prints results and diagrams, saves graphs. |
-| **parser.py** | Converts text (e.g. `r1[x] w1[x] c1`) into `Operation` objects and builds `Transaction` / `Schedule` objects. No analysis logic. |
-| **operation.py** | Defines one operation: type (r, w, inc, dec, c, a), transaction ID, optional data item. Provides `conflicts_with()` for conflict detection. |
+| **main.py** | Entry point. Shows the menu (Manual / Automatic), reads input or loads a test case, builds the schedule, runs the analyzer, prints results and step-by-step explanations, saves graphs. When "Run ALL test cases" is selected, full terminal output is also saved to a timestamped file in the output folder. |
+| **parser.py** | Converts text into `Operation` objects and builds `Transaction` / `Schedule` objects. Enforces well-formedness (START, COMMIT/ABORT). No analysis logic. |
+| **operation.py** | Defines one operation: type (start, r, w, inc, dec, c, a), transaction ID, optional data item. Provides `conflicts_with()` for conflict detection. |
 | **transaction.py** | A single transaction: list of `Operation`s and helpers (e.g. `is_committed()`, `is_aborted()`). |
 | **schedule.py** | The full history: list of all `Operation`s in execution order, plus a map of transaction ID → `Transaction`. Built by the parser when you enter (or load) a history. |
 | **scheduler.py** | Analyzer. Takes a `Schedule`, builds the precedence graph, runs SR / RC / ACA / Strict / Rigorous checks, returns results and explanations. |
@@ -201,8 +210,8 @@ Each team member can implement one of the analysis methods:
 
 4. **Analyze**  
    - Create `Scheduler(schedule)`.
-   - Call `scheduler.analyze()` → returns a dict with SR, RC, ACA, Strict, Rigorous (each with result and explanation).
-   - `print_analysis_results(results)` prints that dict in a readable way.
+   - Call `scheduler.analyze()` → returns a dict with SR, RC, ACA, Strict, Rigorous (each with result, explanation, and step-by-step steps).
+   - `print_analysis_results(results)` prints that dict and the step-by-step explanations.
 
 5. **Diagrams**  
    - **Precedence graph:** `scheduler.get_precedence_graph()` → `PrecedenceGraph` instance. Call `print_graph()` (terminal) and `render(...)` (saves PNG in the output folder).
