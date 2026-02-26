@@ -1,6 +1,9 @@
 # ==========================================================
 # TRANSACTION SCHEDULER SIMULATOR – VERIFIED TEST CASES
 # ==========================================================
+# Format: Each transaction must begin with START(Ti) and end with COMMIT(Ti) or ABORT(Ti).
+# In history, the first occurrence of each transaction must be its start (e.g. start1, start2).
+# ==========================================================
 
 # ==========================================================
 # 1. RECOVERABLE ONLY (RC) – NOT ACA
@@ -8,17 +11,17 @@
 
 # Case 1.1
 Number of transactions: 2
-Transaction 1: T1: r1[x] w1[x] c1
-Transaction 2: T2: r2[x] w2[x] c2
-History: r1[x] w1[x] r2[x] w2[x] c1 c2
+Transaction 1: T1: start1 r1[x] w1[x] c1
+Transaction 2: T2: start2 r2[x] w2[x] c2
+History: start1 r1[x] w1[x] start2 r2[x] w2[x] c1 c2
 # Expected: RC=YES, ACA=NO, ST=NO, Rigorous=NO, SR=YES
 
 
 # Case 1.2
 Number of transactions: 2
-Transaction 1: T1: r1[x] w1[x] r1[y] w1[y] c1
-Transaction 2: T2: r2[x] r2[y] w2[y] c2
-History: r1[x] w1[x] r2[x] r1[y] w1[y] r2[y] w2[y] c1 c2
+Transaction 1: T1: start1 r1[x] w1[x] r1[y] w1[y] c1
+Transaction 2: T2: start2 r2[x] r2[y] w2[y] c2
+History: start1 r1[x] w1[x] start2 r2[x] r1[y] w1[y] r2[y] w2[y] c1 c2
 # Expected: RC=YES, ACA=NO, ST=NO, Rigorous=NO, SR=YES
 
 
@@ -28,18 +31,18 @@ History: r1[x] w1[x] r2[x] r1[y] w1[y] r2[y] w2[y] c1 c2
 
 # Case 2.1
 Number of transactions: 2
-Transaction 1: T1: r1[x] w1[x] c1
-Transaction 2: T2: r2[x] c2
-History: r1[x] w1[x] r2[x] c2 c1
+Transaction 1: T1: start1 r1[x] w1[x] c1
+Transaction 2: T2: start2 r2[x] c2
+History: start1 r1[x] w1[x] start2 r2[x] c2 c1
 # Expected: RC=NO, ACA=NO, ST=NO, Rigorous=NO, SR=YES
 
 
 # Case 2.2
 Number of transactions: 3
-Transaction 1: T1: w1[x] w1[y] c1
-Transaction 2: T2: r2[x] w2[x] c2
-Transaction 3: T3: r3[y] w3[y] c3
-History: w1[x] r2[x] w2[x] c2 w1[y] r3[y] w3[y] c3 c1
+Transaction 1: T1: start1 w1[x] w1[y] c1
+Transaction 2: T2: start2 r2[x] w2[x] c2
+Transaction 3: T3: start3 r3[y] w3[y] c3
+History: start1 w1[x] start2 r2[x] w2[x] c2 w1[y] start3 r3[y] w3[y] c3 c1
 # Expected: RC=NO, ACA=NO, ST=NO, Rigorous=NO, SR=YES
 
 
@@ -49,18 +52,18 @@ History: w1[x] r2[x] w2[x] c2 w1[y] r3[y] w3[y] c3 c1
 
 # Case 3.1
 Number of transactions: 2
-Transaction 1: T1: r1[x] w1[x] c1
-Transaction 2: T2: r2[x] w2[x] c2
-History: r1[x] w1[x] c1 r2[x] w2[x] c2
+Transaction 1: T1: start1 r1[x] w1[x] c1
+Transaction 2: T2: start2 r2[x] w2[x] c2
+History: start1 r1[x] w1[x] c1 start2 r2[x] w2[x] c2
 # Expected: RC=YES, ACA=YES, ST=YES, Rigorous=YES, SR=YES
 
 
 # Case 3.2
 Number of transactions: 3
-Transaction 1: T1: w1[x] c1
-Transaction 2: T2: w2[y] c2
-Transaction 3: T3: r3[x] r3[y] w3[x] c3
-History: w1[x] c1 w2[y] c2 r3[x] r3[y] w3[x] c3
+Transaction 1: T1: start1 w1[x] c1
+Transaction 2: T2: start2 w2[y] c2
+Transaction 3: T3: start3 r3[x] r3[y] w3[x] c3
+History: start1 w1[x] c1 start2 w2[y] c2 start3 r3[x] r3[y] w3[x] c3
 # Expected: RC=YES, ACA=YES, ST=YES, Rigorous=YES, SR=YES
 
 
@@ -70,9 +73,9 @@ History: w1[x] c1 w2[y] c2 r3[x] r3[y] w3[x] c3
 
 # Case 4.1
 Number of transactions: 2
-Transaction 1: T1: w1[x] c1
-Transaction 2: T2: w2[x] c2
-History: w1[x] w2[x] c1 c2
+Transaction 1: T1: start1 w1[x] c1
+Transaction 2: T2: start2 w2[x] c2
+History: start1 w1[x] start2 w2[x] c1 c2
 # Expected: RC=YES, ACA=YES, ST=NO, Rigorous=NO, SR=YES
 
 
@@ -82,17 +85,17 @@ History: w1[x] w2[x] c1 c2
 
 # Case 5.1 (Interleaved but SR)
 Number of transactions: 2
-Transaction 1: T1: r1[x] w1[x] c1
-Transaction 2: T2: r2[y] w2[y] c2
-History: r1[x] r2[y] w1[x] w2[y] c1 c2
+Transaction 1: T1: start1 r1[x] w1[x] c1
+Transaction 2: T2: start2 r2[y] w2[y] c2
+History: start1 r1[x] start2 r2[y] w1[x] w2[y] c1 c2
 # Expected: RC=YES, ACA=YES, ST=YES, Rigorous=YES, SR=YES
 
 
 # Case 5.2 (Cycle – NOT SR)
 Number of transactions: 2
-Transaction 1: T1: r1[x] w1[y] c1
-Transaction 2: T2: r2[y] w2[x] c2
-History: r1[x] r2[y] w1[y] w2[x] c1 c2
+Transaction 1: T1: start1 r1[x] w1[y] c1
+Transaction 2: T2: start2 r2[y] w2[x] c2
+History: start1 r1[x] start2 r2[y] w1[y] w2[x] c1 c2
 # Expected: RC=NO, ACA=NO, ST=NO, Rigorous=NO, SR=NO
 
 
@@ -102,9 +105,9 @@ History: r1[x] r2[y] w1[y] w2[x] c1 c2
 
 # Case 6.1
 Number of transactions: 2
-Transaction 1: T1: r1[x] w1[x] c1
-Transaction 2: T2: r2[x] w2[x] c2
-History: r1[x] w1[x] c1 r2[x] w2[x] c2
+Transaction 1: T1: start1 r1[x] w1[x] c1
+Transaction 2: T2: start2 r2[x] w2[x] c2
+History: start1 r1[x] w1[x] c1 start2 r2[x] w2[x] c2
 # Expected: RC=YES, ACA=YES, ST=YES, Rigorous=YES, SR=YES
 
 
@@ -114,16 +117,16 @@ History: r1[x] w1[x] c1 r2[x] w2[x] c2
 
 # Case 7.1 (Single Transaction)
 Number of transactions: 1
-Transaction 1: T1: r1[x] w1[x] r1[y] w1[y] c1
-History: r1[x] w1[x] r1[y] w1[y] c1
+Transaction 1: T1: start1 r1[x] w1[x] r1[y] w1[y] c1
+History: start1 r1[x] w1[x] r1[y] w1[y] c1
 # Expected: RC=YES, ACA=YES, ST=YES, Rigorous=YES, SR=YES
 
 
 # Case 7.2 (Only Reads)
 Number of transactions: 2
-Transaction 1: T1: r1[x] c1
-Transaction 2: T2: r2[x] c2
-History: r1[x] r2[x] c1 c2
+Transaction 1: T1: start1 r1[x] c1
+Transaction 2: T2: start2 r2[x] c2
+History: start1 r1[x] start2 r2[x] c1 c2
 # Expected: RC=YES, ACA=YES, ST=YES, Rigorous=YES, SR=YES
 
 
@@ -133,28 +136,28 @@ History: r1[x] r2[x] c1 c2
 
 # Case 8.1 — Conflict-Serializable (Acyclic), T1→T2→T3, serial order T1,T2,T3
 Number of transactions: 3
-Transaction 1: T1: r1[x] w1[x] c1
-Transaction 2: T2: r2[x] w2[y] c2
-Transaction 3: T3: r3[y] w3[z] c3
-History: r1[x] w1[x] r2[x] w2[y] r3[y] w3[z] c1 c2 c3
+Transaction 1: T1: start1 r1[x] w1[x] c1
+Transaction 2: T2: start2 r2[x] w2[y] c2
+Transaction 3: T3: start3 r3[y] w3[z] c3
+History: start1 r1[x] w1[x] start2 r2[x] w2[y] start3 r3[y] w3[z] c1 c2 c3
 # Expected: T1→T2, T2→T3, no cycle, SR=YES, serial order T1→T2→T3
 
 
 # Case 8.2 — Non-Serializable (Cycle on x and y)
 Number of transactions: 2
-Transaction 1: T1: r1[x] w1[y] c1
-Transaction 2: T2: r2[x] w2[y] c2
-History: r1[x] w2[x] r2[y] w1[y] c1 c2
+Transaction 1: T1: start1 r1[x] w1[y] c1
+Transaction 2: T2: start2 r2[x] w2[y] c2
+History: start1 r1[x] start2 w2[x] r2[y] w1[y] c1 c2
 # Expected: T1→T2 (r1(x) before w2(x)), T2→T1 (r2(y) before w1(y)), cycle, SR=NO
 
 
 # Case 8.3 — 4 Transactions, multiple edges, still serializable (T1→T2→T3→T4, T1→T4)
 Number of transactions: 4
-Transaction 1: T1: r1[x] w1[x] c1
-Transaction 2: T2: r2[x] w2[y] c2
-Transaction 3: T3: r3[y] w3[z] c3
-Transaction 4: T4: r4[z] w4[x] c4
-History: r1[x] w1[x] r2[x] w2[y] r3[y] w3[z] r4[z] w4[x] c1 c2 c3 c4
+Transaction 1: T1: start1 r1[x] w1[x] c1
+Transaction 2: T2: start2 r2[x] w2[y] c2
+Transaction 3: T3: start3 r3[y] w3[z] c3
+Transaction 4: T4: start4 r4[z] w4[x] c4
+History: start1 r1[x] w1[x] start2 r2[x] w2[y] start3 r3[y] w3[z] start4 r4[z] w4[x] c1 c2 c3 c4
 # Expected: No cycle, SR=YES, serial order T1→T2→T3→T4
 
 
@@ -164,11 +167,11 @@ History: r1[x] w1[x] r2[x] w2[y] r3[y] w3[z] r4[z] w4[x] c1 c2 c3 c4
 
 # Case 9.1 — 4 transactions with multiple interleaved conflicts but acyclic
 Number of transactions: 4
-Transaction 1: T1: r1[x] w1[y] c1
-Transaction 2: T2: r2[y] w2[z] c2
-Transaction 3: T3: r3[z] w3[x] c3
-Transaction 4: T4: r4[x] r4[y] w4[z] c4
-History: r1[x] r2[y] r3[z] w1[y] r4[x] w2[z] w3[x] r4[y] w4[z] c1 c2 c3 c4
+Transaction 1: T1: start1 r1[x] w1[y] c1
+Transaction 2: T2: start2 r2[y] w2[z] c2
+Transaction 3: T3: start3 r3[z] w3[x] c3
+Transaction 4: T4: start4 r4[x] r4[y] w4[z] c4
+History: start1 r1[x] start2 r2[y] start3 r3[z] w1[y] r4[x] w2[z] w3[x] r4[y] w4[z] c1 c2 c3 c4
 # Expected: 
 # - Conflicts: T1→T2 (w1[y] before r2[y]? careful: r2[y] happened BEFORE w1[y]! No edge)
 #   Actually: r2[y] at position 2, w1[y] at position 4 → r2 reads old value, so no T1→T2 edge
@@ -182,11 +185,11 @@ History: r1[x] r2[y] r3[z] w1[y] r4[x] w2[z] w3[x] r4[y] w4[z] c1 c2 c3 c4
 
 # Case 9.2 — 4 transactions with cycle involving 3 transactions
 Number of transactions: 4
-Transaction 1: T1: w1[x] r1[y] c1
-Transaction 2: T2: r2[x] w2[y] c2
-Transaction 3: T3: w3[z] r3[x] c3
-Transaction 4: T4: r4[z] w4[x] c4
-History: w1[x] r2[x] w2[y] w3[z] r3[x] r4[z] r1[y] w4[x] c1 c2 c3 c4
+Transaction 1: T1: start1 w1[x] r1[y] c1
+Transaction 2: T2: start2 r2[x] w2[y] c2
+Transaction 3: T3: start3 w3[z] r3[x] c3
+Transaction 4: T4: start4 r4[z] w4[x] c4
+History: start1 w1[x] start2 r2[x] w2[y] start3 w3[z] r3[x] start4 r4[z] r1[y] w4[x] c1 c2 c3 c4
 # Expected:
 # - T1→T2? w1[x] before r2[x]? Yes → T1→T2
 # - T2→T1? r1[y] after w2[y]? r1[y] at pos7, w2[y] at pos3 → Yes, T2→T1
@@ -203,10 +206,10 @@ History: w1[x] r2[x] w2[y] w3[z] r3[x] r4[z] r1[y] w4[x] c1 c2 c3 c4
 
 # Case 10.1 — Simple abort, no cascading
 Number of transactions: 3
-Transaction 1: T1: w1[x] a1
-Transaction 2: T2: r2[x] w2[y] c2
-Transaction 3: T3: r3[y] w3[z] c3
-History: w1[x] r2[x] w2[y] a1 r3[y] w3[z] c2 c3
+Transaction 1: T1: start1 w1[x] a1
+Transaction 2: T2: start2 r2[x] w2[y] c2
+Transaction 3: T3: start3 r3[y] w3[z] c3
+History: start1 w1[x] start2 r2[x] w2[y] a1 start3 r3[y] w3[z] c2 c3
 # Expected: 
 # - T2 reads x from T1 (dirty read), but T1 aborts → T2 must abort too? But T2 already committed!
 # - This history is problematic because T2 committed after reading dirty data that later aborted
@@ -219,10 +222,10 @@ History: w1[x] r2[x] w2[y] a1 r3[y] w3[z] c2 c3
 
 # Case 10.2 — Cascading abort
 Number of transactions: 3
-Transaction 1: T1: w1[x] a1
-Transaction 2: T2: r2[x] w2[y] a2
-Transaction 3: T3: r3[y] w3[z] c3
-History: w1[x] r2[x] w2[y] r3[y] w3[z] a1 a2 c3
+Transaction 1: T1: start1 w1[x] a1
+Transaction 2: T2: start2 r2[x] w2[y] a2
+Transaction 3: T3: start3 r3[y] w3[z] c3
+History: start1 w1[x] start2 r2[x] w2[y] start3 r3[y] w3[z] a1 a2 c3
 # Expected:
 # - T2 reads from T1 (dirty) → when T1 aborts, T2 must abort
 # - T3 reads from T2 (dirty) → when T2 aborts, T3 must abort too
@@ -234,10 +237,10 @@ History: w1[x] r2[x] w2[y] r3[y] w3[z] a1 a2 c3
 
 # Case 10.3 — Abort with proper dependency handling
 Number of transactions: 3
-Transaction 1: T1: w1[x] c1
-Transaction 2: T2: r2[x] w2[y] a2
-Transaction 3: T3: r3[y] w3[z] c3
-History: w1[x] c1 r2[x] w2[y] r3[y] w3[z] a2 c3
+Transaction 1: T1: start1 w1[x] c1
+Transaction 2: T2: start2 r2[x] w2[y] a2
+Transaction 3: T3: start3 r3[y] w3[z] c3
+History: start1 w1[x] c1 start2 r2[x] w2[y] start3 r3[y] w3[z] a2 c3
 # Expected:
 # - T2 reads from committed T1 → OK even though T2 aborts later
 # - T3 reads from T2 (dirty) but T2 aborts → T3 must abort! But T3 commits
@@ -252,10 +255,10 @@ History: w1[x] c1 r2[x] w2[y] r3[y] w3[z] a2 c3
 
 # Case 11.1 — INC/DEC with read-write conflicts
 Number of transactions: 3
-Transaction 1: T1: r1[x] inc1[x] dec1[y] c1
-Transaction 2: T2: inc2[x] r2[y] c2
-Transaction 3: T3: r3[x] dec3[z] c3
-History: r1[x] inc2[x] inc1[x] r2[y] r3[x] dec1[y] dec3[z] c1 c2 c3
+Transaction 1: T1: start1 r1[x] inc1[x] dec1[y] c1
+Transaction 2: T2: start2 inc2[x] r2[y] c2
+Transaction 3: T3: start3 r3[x] dec3[z] c3
+History: start1 r1[x] start2 inc2[x] inc1[x] r2[y] start3 r3[x] dec1[y] dec3[z] c1 c2 c3
 # Expected:
 # - Conflicts: inc counts as write
 #   - T1→T2? inc1[x] after inc2[x]? inc1 at pos3, inc2 at pos2 → T2 writes before T1, so T2→T1
@@ -279,10 +282,10 @@ History: r1[x] inc2[x] inc1[x] r2[y] r3[x] dec1[y] dec3[z] c1 c2 c3
 
 # Case 11.2 — INC/DEC creating cycles
 Number of transactions: 3
-Transaction 1: T1: inc1[x] dec1[y] c1
-Transaction 2: T2: r2[x] inc2[y] c2
-Transaction 3: T3: r3[y] dec3[x] c3
-History: inc1[x] r2[x] inc2[y] r3[y] dec3[x] dec1[y] c1 c2 c3
+Transaction 1: T1: start1 inc1[x] dec1[y] c1
+Transaction 2: T2: start2 r2[x] inc2[y] c2
+Transaction 3: T3: start3 r3[y] dec3[x] c3
+History: start1 inc1[x] start2 r2[x] inc2[y] start3 r3[y] dec3[x] dec1[y] c1 c2 c3
 # Expected:
 # - Conflicts (treat inc/dec as writes):
 #   - T1→T2? inc1[x] before r2[x] → yes T1→T2
@@ -307,10 +310,10 @@ History: inc1[x] r2[x] inc2[y] r3[y] dec3[x] dec1[y] c1 c2 c3
 
 # Case 11.3 — INC/DEC with write-conflicts creating non-serializable cycle
 Number of transactions: 3
-Transaction 1: T1: inc1[x] dec1[y] c1
-Transaction 2: T2: inc2[y] dec2[z] c2
-Transaction 3: T3: inc3[z] dec3[x] c3
-History: inc1[x] inc2[y] inc3[z] dec3[x] dec1[y] dec2[z] c1 c2 c3
+Transaction 1: T1: start1 inc1[x] dec1[y] c1
+Transaction 2: T2: start2 inc2[y] dec2[z] c2
+Transaction 3: T3: start3 inc3[z] dec3[x] c3
+History: start1 inc1[x] start2 inc2[y] start3 inc3[z] dec3[x] dec1[y] dec2[z] c1 c2 c3
 # Expected:
 # - Conflicts (inc/dec as writes):
 #   - T1 and T3 on x: inc1[x] at pos1, dec3[x] at pos4 → T3 writes after T1 → T1→T3

@@ -70,57 +70,89 @@ class Parser:
     def parse_transaction(transaction_string):
         """
         Parse a transaction string.
-        
-        Example: "T1: r1[x] w1[x] c1"
-        
-        Args:
-            transaction_string: String representation of transaction
-        
-        Returns:
-            Transaction object
+        Example: "T1: start1 r1[x] w1[x] c1"
+        Transaction must begin with START(Ti) and end with COMMIT(Ti) or ABORT(Ti).
         """
         from transaction import Transaction
-        
-        # Match format: T1: r1[x] w1[x] c1
+
         match = re.match(r'^T(\d+):\s*(.+)$', transaction_string.strip())
         if not match:
             raise ValueError(f"Invalid transaction format: {transaction_string}")
-        
+
         tid = int(match.group(1))
         operations_str = match.group(2)
-        
-        # Create transaction
+
+        if not operations_str.strip():
+            raise ValueError(f"Transaction T{tid}: no operations given. Use e.g. T{tid}: start{tid} r{tid}[x] w{tid}[x] c{tid}")
+
         transaction = Transaction(tid)
-        
-        # Parse operations
         op_strings = operations_str.split()
         for op_str in op_strings:
             operation = Parser.parse_operation(op_str)
             transaction.add_operation(operation)
-        
+
+        Parser._validate_transaction_operations(transaction.operations, tid, "Transaction")
         return transaction
-    
+
+    @staticmethod
+    def _validate_transaction_operations(operations, tid, context="Transaction"):
+        """
+        Validate well-formedness: transaction must begin with START and end with COMMIT or ABORT.
+        Raises ValueError with a clear message if not.
+        """
+        if not operations:
+            raise ValueError(f"{context} T{tid}: transaction has no operations.")
+        first = operations[0]
+        if not first.is_start() or first.transaction_id != tid:
+            raise ValueError(
+                f"{context} T{tid}: must begin with START (e.g. start{tid}). "
+                f"First operation is {first}."
+            )
+        last = operations[-1]
+        if not (last.is_commit() or last.is_abort()) or last.transaction_id != tid:
+            raise ValueError(
+                f"{context} T{tid}: must end with COMMIT or ABORT (e.g. c{tid} or a{tid}). "
+                f"Last operation is {last}."
+            )
+
     @staticmethod
     def parse_schedule(schedule_string):
         """
         Parse a schedule string (history).
-        
-        Example: "r1[x] w1[x] r2[y] w2[y] c1 c2"
-        
-        Args:
-            schedule_string: String representation of schedule
-        
-        Returns:
-            Schedule object
+        Example: "start1 r1[x] w1[x] start2 r2[y] w2[y] c1 c2"
+        Each transaction must begin with START(Ti) and end with COMMIT(Ti) or ABORT(Ti).
         """
         from schedule import Schedule
-        
+
         schedule = Schedule()
-        
-        # Split by spaces and parse each operation
         op_strings = schedule_string.strip().split()
+        if not op_strings:
+            raise ValueError("Schedule (history) cannot be empty.")
+
         for op_str in op_strings:
             operation = Parser.parse_operation(op_str)
             schedule.add_operation(operation)
-        
+
+        # Group each transaction's operations by first appearance order (schedule order)
+        by_tid = {}
+        for op in schedule.operations:
+            tid = op.transaction_id
+            if tid not in by_tid:
+                by_tid[tid] = []
+            by_tid[tid].append(op)
+
+        for tid, ops in by_tid.items():
+            first_op = ops[0]
+            last_op = ops[-1]
+            if not first_op.is_start() or first_op.transaction_id != tid:
+                raise ValueError(
+                    f"Schedule: transaction T{tid} must begin with START (e.g. start{tid}). "
+                    f"First operation of T{tid} in schedule is {first_op}."
+                )
+            if not (last_op.is_commit() or last_op.is_abort()) or last_op.transaction_id != tid:
+                raise ValueError(
+                    f"Schedule: transaction T{tid} must end with COMMIT or ABORT (e.g. c{tid} or a{tid}). "
+                    f"Last operation of T{tid} in schedule is {last_op}."
+                )
+
         return schedule

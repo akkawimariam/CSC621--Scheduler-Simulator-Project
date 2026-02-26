@@ -106,6 +106,43 @@ class PrecedenceGraph:
 
         return False
 
+    def get_cycle(self):
+        """
+        If the graph has a cycle, return a list of transaction IDs forming a cycle (e.g. [1, 2, 1]).
+        Otherwise return an empty list.
+        """
+        if not self.nodes:
+            return []
+
+        adj = defaultdict(list)
+        for u, v in self.edges:
+            adj[u].append(v)
+
+        WHITE, GRAY, BLACK = 0, 1, 2
+        color = {n: WHITE for n in self.nodes}
+        path = []
+        cycle_found = []
+
+        def dfs(node):
+            nonlocal cycle_found
+            color[node] = GRAY
+            path.append(node)
+            for neighbor in adj[node]:
+                if color[neighbor] == GRAY:
+                    idx = path.index(neighbor)
+                    cycle_found = path[idx:] + [neighbor]
+                    return True
+                if color[neighbor] == WHITE and dfs(neighbor):
+                    return True
+            path.pop()
+            color[node] = BLACK
+            return False
+
+        for node in sorted(self.nodes):
+            if color[node] == WHITE and dfs(node):
+                return cycle_found
+        return []
+        
     # ---------------------------------------------------------
     # TOPOLOGICAL ORDER
     # ---------------------------------------------------------

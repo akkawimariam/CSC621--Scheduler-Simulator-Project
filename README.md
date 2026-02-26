@@ -6,7 +6,7 @@ A Python-based transaction scheduler simulator that analyzes database schedules 
 
 ```
 .
-├── operation.py        # Operation class (READ, WRITE, INCREMENT, DECREMENT, COMMIT, ABORT)
+├── operation.py        # Operation class (START, READ, WRITE, INCREMENT, DECREMENT, COMMIT, ABORT)
 ├── transaction.py      # Transaction class (collection of operations)
 ├── schedule.py         # Schedule class (history of operations)
 ├── scheduler.py        # Scheduler class (analyzer; uses precedence graph for SR)
@@ -20,14 +20,14 @@ A Python-based transaction scheduler simulator that analyzes database schedules 
 
 ### Operation
 Represents a single database operation:
-- Types: READ (r), WRITE (w), INCREMENT (inc), DECREMENT (dec), COMMIT (c), ABORT (a)
+- Types: START (start), READ (r), WRITE (w), INCREMENT (inc), DECREMENT (dec), COMMIT (c), ABORT (a)
 - Contains: operation type, transaction ID, data item (if applicable)
 
 ### Transaction
-Represents a database transaction:
-- Contains a sequence of operations
-- Tracks commit/abort status
-- Format: `T1: r1[x] w1[x] c1`
+Represents a database transaction (well-formed):
+- Must **begin with START(Ti)** and **end with COMMIT(Ti) or ABORT(Ti)**
+- Contains a sequence of operations in between
+- Format: `T1: start1 r1[x] w1[x] c1`
 
 ### Schedule
 Represents a history/schedule:
@@ -69,46 +69,55 @@ python main.py
 
 ### Input Format
 
+Each transaction must be **well-formed**: it must **begin with START(Ti)** and **end with COMMIT(Ti) or ABORT(Ti)**. The system will report an error if any transaction is missing START or COMMIT/ABORT.
+
 1. **Number of transactions**: Enter an integer (e.g., `2`)
 
-2. **Transaction sequences**: Enter each transaction in format:
+2. **Transaction sequences**: Enter each transaction in format (START first, COMMIT or ABORT last):
    ```
-   T1: r1[x] w1[x] c1
-   T2: r2[y] w2[y] c2
+   T1: start1 r1[x] w1[x] c1
+   T2: start2 r2[y] w2[y] c2
    ```
 
-3. **History/Schedule**: Enter the schedule in one line:
+3. **History/Schedule**: Enter the schedule in one line. The **first** occurrence of each transaction in the schedule must be its START (e.g. `start1`, `start2`):
    ```
-   r1[x] w1[x] r2[y] w2[y] c1 c2
+   start1 r1[x] w1[x] start2 r2[y] w2[y] c1 c2
    ```
+
+### Validation Errors
+
+- **Missing START:** e.g. "Transaction T1 must begin with START (e.g. start1). First operation is r1[x]."
+- **Missing COMMIT/ABORT:** e.g. "Transaction T2 must end with COMMIT or ABORT (e.g. c2 or a2). Last operation is w2[y]."
+- These apply to both transaction strings (manual input) and the history string.
 
 ### Example Session
 
 ```
 Enter the number of transactions: 2
 
-Enter 2 transaction sequence(s) in format: T1: r1[x] w1[x] c1
-Transaction 1: T1: r1[x] w1[x] c1
-  Parsed: T1: r1[x] w1[x] c1
-Transaction 2: T2: r2[y] w2[y] c2
-  Parsed: T2: r2[y] w2[y] c2
+Enter 2 transaction sequence(s) in format: T1: start1 r1[x] w1[x] c1
+Transaction 1: T1: start1 r1[x] w1[x] c1
+  Parsed: T1: start1 r1[x] w1[x] c1
+Transaction 2: T2: start2 r2[y] w2[y] c2
+  Parsed: T2: start2 r2[y] w2[y] c2
 
 Enter the history (schedule) in one line:
-Example: r1[x] w1[x] r2[y] w2[y] c1 c2
-History: r1[x] w1[x] r2[y] w2[y] c1 c2
-  Parsed schedule: r1[x] w1[x] r2[y] w2[y] c1 c2
+Example: start1 r1[x] w1[x] start2 r2[y] w2[y] c1 c2
+History: start1 r1[x] w1[x] start2 r2[y] w2[y] c1 c2
+  Parsed schedule: start1 r1[x] w1[x] start2 r2[y] w2[y] c1 c2
 
 [Analysis results will be displayed]
 ```
 
 ### Supported Operations
 
+- `start1` - START operation for transaction 1 (required as first op of each transaction)
 - `r1[x]` - READ operation by transaction 1 on data item x
 - `w1[x]` - WRITE operation by transaction 1 on data item x
 - `inc1[x]` - INCREMENT operation by transaction 1 on data item x
 - `dec1[x]` - DECREMENT operation by transaction 1 on data item x
-- `c1` - COMMIT operation for transaction 1
-- `a1` - ABORT operation for transaction 1
+- `c1` - COMMIT operation for transaction 1 (required as last op if transaction commits)
+- `a1` - ABORT operation for transaction 1 (required as last op if transaction aborts)
 
 ## Exiting
 
@@ -117,13 +126,12 @@ Type `quit`, `exit`, or `q` at any prompt to terminate the program.
 ## Implementation Status
 
 - ✅ Basic structure and classes
-- ✅ Parser for transactions and schedules
+- ✅ Parser for transactions and schedules (with well-formedness: START, COMMIT/ABORT)
 - ✅ User input handling
 - ✅ Conflict-serializability analysis (precedence graph, cycle check, serial order)
 - ✅ Precedence graph generation and visualization (DOT/PNG)
-- ⏳ Recoverability analysis (stub)
-- ⏳ ACA analysis (stub)
-- ⏳ Strict analysis (stub)
+- ✅ Recoverability (RC) and ACA analysis with step-by-step explanation
+- ⏳ Strict (ST) analysis (stub)
 - ⏳ Rigorous analysis (stub)
 
 ## Next Steps
@@ -188,7 +196,7 @@ Each team member can implement one of the analysis methods:
    - **q:** Exit the loop and the program ends.
 
 3. **Get a schedule**
-   - **Manual:** Ask for number of transactions, then each transaction line (e.g. `T1: r1[x] w1[x] c1`), then one history line. Parse the **history** with `Parser.parse_schedule(history_input)` → get a `Schedule` object.
+   - **Manual:** Ask for number of transactions, then each transaction line (e.g. `T1: start1 r1[x] w1[x] c1`), then one history line. Parse the **history** with `Parser.parse_schedule(history_input)` → get a `Schedule` object. Each transaction must begin with START and end with COMMIT or ABORT.
    - **Automatic:** Take the chosen test case; `Parser.parse_schedule(tc["history"])` → same `Schedule` object.
 
 4. **Analyze**  
