@@ -65,6 +65,8 @@ class Scheduler:
             for idx, tj in reversed(writers_before):
                 if self._aborted_before(tj, p_ri, abort_index):
                     continue
+                if ti == tj:
+                    continue  # RC/ACA only consider read-from between different transactions
                 visible_writer = tj
                 break
             if visible_writer is not None:

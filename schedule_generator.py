@@ -45,8 +45,8 @@ class ScheduleGenerator:
 
         Returns:
             (transactions, history) where:
-              - transactions: list of strings in the format 'T1: r1[x] w1[y] c1'
-              - history: a single-line history like 'r1[x] w2[y] c1 c2'
+              - transactions: list of strings in the format 'T1: start1 r1[x] w1[y] c1'
+              - history: a single-line history like 'start1 r1[x] w2[y] c1 c2' (well-formed: each txn starts with START)
         """
         if seed is not None:
             random.seed(seed)
@@ -61,12 +61,12 @@ class ScheduleGenerator:
         transactions: List[List[str]] = []
         transaction_strings: List[str] = []
 
-        # 1) Build each transaction's operation list.
+        # 1) Build each transaction's operation list (well-formed: START first, COMMIT/ABORT last).
         for tid in range(1, num_transactions + 1):
             # Number of data operations (reads/writes/inc/dec) before termination.
             num_ops = random.randint(1, max_ops_per_transaction)
 
-            ops: List[str] = []
+            ops: List[str] = [f"start{tid}"]
             for _ in range(num_ops):
                 op_type = ScheduleGenerator._random_op_type()
                 item = random.choice(data_items)
