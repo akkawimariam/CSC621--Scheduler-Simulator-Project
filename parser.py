@@ -97,7 +97,8 @@ class Parser:
     @staticmethod
     def _validate_transaction_operations(operations, tid, context="Transaction"):
         """
-        Validate well-formedness: transaction must begin with START and end with COMMIT or ABORT.
+        Validate well-formedness: transaction must begin with START, end with exactly one
+        COMMIT or ABORT, and contain only valid operations in between.
         Raises ValueError with a clear message if not.
         """
         if not operations:
@@ -114,6 +115,14 @@ class Parser:
                 f"{context} T{tid}: must end with COMMIT or ABORT (e.g. c{tid} or a{tid}). "
                 f"Last operation is {last}."
             )
+        # Exactly one COMMIT or ABORT, and it must be the last operation (no commit/abort in middle)
+        mid_ops = operations[1:-1]
+        for op in mid_ops:
+            if op.is_commit() or op.is_abort():
+                raise ValueError(
+                    f"{context} T{tid}: must end with exactly one COMMIT or ABORT. "
+                    f"Found {op} in the middle of the transaction."
+                )
 
     @staticmethod
     def parse_schedule(schedule_string):
@@ -154,5 +163,12 @@ class Parser:
                     f"Schedule: transaction T{tid} must end with COMMIT or ABORT (e.g. c{tid} or a{tid}). "
                     f"Last operation of T{tid} in schedule is {last_op}."
                 )
+            # Exactly one COMMIT or ABORT per transaction, at the end
+            for op in ops[1:-1]:
+                if op.is_commit() or op.is_abort():
+                    raise ValueError(
+                        f"Schedule: transaction T{tid} must end with exactly one COMMIT or ABORT. "
+                        f"Found {op} in the middle of T{tid}."
+                    )
 
         return schedule
