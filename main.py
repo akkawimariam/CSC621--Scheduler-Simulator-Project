@@ -9,6 +9,8 @@ import os
 from scheduler import Scheduler
 from parser import Parser
 from history_diagram import HistoryDiagram
+from schedule_generator import ScheduleGenerator
+from locking import Strict2PLHistory
 
 # Output folder for precedence graph and history diagram (relative to this file)
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -396,6 +398,89 @@ def run_automatic_mode():
             print("Invalid input. Enter a number or q.")
 
 
+def run_generation_mode():
+    """Bonus: generate random transactions and history, then analyze."""
+    print("\nRandom schedule generation.")
+    try:
+        num_txns_input = input("Enter number of transactions (e.g., 2 or 3): ").strip()
+        if num_txns_input.lower() in ["q", "quit", "exit"]:
+            return
+        num_txns = int(num_txns_input)
+
+        max_ops_input = input("Enter max number of data operations per transaction (e.g., 3 or 4): ").strip()
+        if max_ops_input.lower() in ["q", "quit", "exit"]:
+            return
+        max_ops = int(max_ops_input)
+
+        data_items_input = input("Enter data items separated by spaces or commas (default: x y): ").strip()
+        if not data_items_input:
+            data_items = ["x", "y"]
+        else:
+            # Allow both "x y" and "x,y z" styles.
+            cleaned = data_items_input.replace(",", " ")
+            data_items = [token for token in cleaned.split() if token]
+
+        allow_aborts_input = input("Allow some transactions to abort? (y/n, default: y): ").strip().lower()
+        allow_aborts = allow_aborts_input not in ["n", "no"]
+    except ValueError:
+        print("Error: please enter valid numeric values.\n")
+        return
+
+    try:
+        txn_strings, history = ScheduleGenerator.generate_transactions_and_history(
+            num_transactions=num_txns,
+            max_ops_per_transaction=max_ops,
+            data_items=data_items,
+            allow_aborts=allow_aborts,
+        )
+    except Exception as e:
+        print(f"Error generating schedule: {e}\n")
+        return
+
+    print("\nGenerated transactions:")
+    for s in txn_strings:
+        print("  " + s)
+    print("\nGenerated history:")
+    print("  " + history)
+    print()
+
+    try:
+        schedule = Parser.parse_schedule(history)
+        print(f"Parsed schedule: {schedule}")
+    except ValueError as e:
+        print(f"\nError: generated history could not be parsed: {e}\n")
+        return
+
+    scheduler = Scheduler(schedule)
+    results = scheduler.analyze()
+    print_analysis_results(results)
+
+    pg = scheduler.get_precedence_graph()
+    hd = HistoryDiagram(schedule)
+
+    print()
+    pg.print_graph()
+    print("\n--- History diagram (terminal) ---")
+    hd.print_ascii()
+    print("\n--- Strict 2PL lock history ---")
+    Strict2PLHistory(schedule).print_ascii()
+    print()
+
+    try:
+        out_path = pg.render(filepath=_output_path("precedence_graph_generated"), format="png")
+        print(f"Precedence graph saved: {out_path}")
+        if out_path.endswith(".dot"):
+            print("  (Install 'networkx' and 'matplotlib' to generate PNG.)")
+    except Exception as e:
+        print(f"Could not save precedence graph: {e}")
+    try:
+        out_h = hd.render(filepath=_output_path("history_diagram_generated"))
+        if out_h:
+            print(f"History diagram saved: {out_h}")
+    except Exception as e:
+        print(f"Could not save history diagram: {e}")
+
+
 def main():
     """Main function: choose Manual or Automatic mode, then run."""
     print("="*60)
@@ -408,7 +493,8 @@ def main():
             print("Input mode:")
             print("  1 - Manual (enter transactions and history yourself)")
             print("  2 - Automatic (run a test case from the built-in list)")
-            mode_input = input("Choice (1, 2, or q to quit): ").strip().lower()
+            print("  3 - Random schedule generation")
+            mode_input = input("Choice (1, 2, 3, or q to quit): ").strip().lower()
             if mode_input in ['quit', 'exit', 'q']:
                 print("Exiting program. Goodbye!")
                 break
@@ -420,8 +506,10 @@ def main():
                     # else loop again for another manual run
             elif mode_input == '2':
                 run_automatic_mode()
+            elif mode_input == '3':
+                run_generation_mode()
             else:
-                print("Invalid choice. Enter 1, 2, or q.\n")
+                print("Invalid choice. Enter 1, 2, 3, or q.\n")
         except KeyboardInterrupt:
             print("\n\nExiting program. Goodbye!")
             break

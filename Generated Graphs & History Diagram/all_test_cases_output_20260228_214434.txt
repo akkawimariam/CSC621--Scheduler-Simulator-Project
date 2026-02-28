@@ -93,8 +93,8 @@ Conflict edges (before --> after):
   w1[x]  -->  w2[x]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_1.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_1.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_1.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_1.png
 
 ############################################################
 Running: Case 1.2 - Recoverable only (RC, not ACA)
@@ -198,8 +198,8 @@ Conflict edges (before --> after):
   w1[y]  -->  w2[y]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_2.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_2.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_2.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_2.png
 
 ############################################################
 Running: Case 2.1 - Not recoverable
@@ -292,8 +292,8 @@ Conflict edges (before --> after):
   w1[x]  -->  r2[x]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_3.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_3.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_3.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_3.png
 
 ############################################################
 Running: Case 2.2 - Not recoverable (3 txns)
@@ -399,8 +399,8 @@ Conflict edges (before --> after):
   w1[y]  -->  w3[y]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_4.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_4.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_4.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_4.png
 
 ############################################################
 Running: Case 3.1 - Strict (and Rigorous)
@@ -493,8 +493,8 @@ Conflict edges (before --> after):
   w1[x]  -->  w2[x]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_5.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_5.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_5.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_5.png
 
 ############################################################
 Running: Case 3.2 - Strict (and Rigorous, 3 txns)
@@ -593,8 +593,8 @@ Conflict edges (before --> after):
   w2[y]  -->  r3[y]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_6.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_6.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_6.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_6.png
 
 ############################################################
 Running: Case 4.1 - ACA but not Strict (dirty write)
@@ -684,8 +684,8 @@ Conflict edges (before --> after):
   w1[x]  -->  w2[x]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_7.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_7.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_7.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_7.png
 
 ############################################################
 Running: Case 5.1 - Conflict serializable (interleaved)
@@ -777,8 +777,8 @@ Conflict edges (before --> after):
   (none)
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_8.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_8.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_8.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_8.png
 
 ############################################################
 Running: Case 5.2 - NOT conflict serializable (cycle)
@@ -873,8 +873,8 @@ Conflict edges (before --> after):
   r2[y]  -->  w1[y]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_9.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_9.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_9.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_9.png
 
 ############################################################
 Running: Case 6.1 - Rigorous (serial)
@@ -967,8 +967,8 @@ Conflict edges (before --> after):
   w1[x]  -->  w2[x]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_10.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_10.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_10.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_10.png
 
 ############################################################
 Running: Case 7.1 - Edge: single transaction
@@ -1058,8 +1058,8 @@ Conflict edges (before --> after):
   (none)
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_11.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_11.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_11.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_11.png
 
 ############################################################
 Running: Case 7.2 - Edge: only reads
@@ -1149,8 +1149,8 @@ Conflict edges (before --> after):
   (none)
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_12.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_12.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_12.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_12.png
 
 ############################################################
 Running: Case 8.1 - Conflict-Serializable (Acyclic) T1→T2→T3
@@ -1255,8 +1255,8 @@ Conflict edges (before --> after):
   w2[y]  -->  r3[y]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_13.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_13.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_13.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_13.png
 
 ############################################################
 Running: Case 8.2 - Non-Serializable (Cycle x,y)
@@ -1351,8 +1351,8 @@ Conflict edges (before --> after):
   r2[y]  -->  w1[y]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_14.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_14.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_14.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_14.png
 
 ############################################################
 Running: Case 8.3 - 4 Txns serializable T1→T2→T3→T4
@@ -1472,8 +1472,8 @@ Conflict edges (before --> after):
   w3[z]  -->  r4[z]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_15.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_15.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_15.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_15.png
 
 ############################################################
 Running: Case 9.1 - 4 txns interleaved conflicts acyclic
@@ -1489,7 +1489,7 @@ ANALYSIS RESULTS
   Step-by-step:
     1. Build precedence graph from schedule (nodes = transactions, edge Ti→Tj if some op of Ti precedes and conflicts with an op of Tj).
     2. Edges (conflict order): T1→T3; T1→T4; T2→T1; T2→T4; T3→T2; T3→T4; T4→T3.
-    3. Cycle detected: T4 → T3 → T4 (schedule is not conflict-serializable).
+    3. Cycle detected: T1 → T3 → T2 → T1 (schedule is not conflict-serializable).
 
 [Recoverable (RC)]
   Result: YES
@@ -1594,8 +1594,8 @@ Conflict edges (before --> after):
   w2[z]  -->  w4[z]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_16.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_16.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_16.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_16.png
 
 ############################################################
 Running: Case 9.2 - 4 txns with cycle (T1→T2→T1)
@@ -1719,8 +1719,8 @@ Conflict edges (before --> after):
   r3[x]  -->  w4[x]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_17.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_17.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_17.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_17.png
 
 ############################################################
 Running: Case 10.1 - Abort T1, T2 committed after dirty read
@@ -1824,8 +1824,8 @@ Conflict edges (before --> after):
   w2[y]  -->  r3[y]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_18.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_18.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_18.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_18.png
 
 ############################################################
 Running: Case 10.2 - Cascading abort (T1,T2 abort, T3 commits)
@@ -1929,8 +1929,8 @@ Conflict edges (before --> after):
   w2[y]  -->  r3[y]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_19.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_19.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_19.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_19.png
 
 ############################################################
 Running: Case 10.3 - T2 aborts, T3 reads from T2 then commits
@@ -2032,8 +2032,8 @@ Conflict edges (before --> after):
   w2[y]  -->  r3[y]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_20.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_20.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_20.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_20.png
 
 ############################################################
 Running: Case 11.1 - INC/DEC read-write conflicts
@@ -2143,8 +2143,8 @@ Conflict edges (before --> after):
   r2[y]  -->  dec1[y]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_21.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_21.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_21.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_21.png
 
 ############################################################
 Running: Case 11.2 - INC/DEC acyclic
@@ -2256,8 +2256,8 @@ Conflict edges (before --> after):
   r3[y]  -->  dec1[y]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_22.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_22.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_22.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_22.png
 
 ############################################################
 Running: Case 11.3 - INC/DEC cycle (non-serializable)
@@ -2360,5 +2360,5 @@ Conflict edges (before --> after):
   inc3[z]  -->  dec2[z]
 ==========================
 
-Precedence graph saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\precedence_graph_case_23.png
-History diagram saved: C:\Users\HPZ4-01-User01\Desktop\research - mariam\CSC621- applied project\CSC621--Scheduler-Simulator-Project\Generated Graphs & History Diagram\history_diagram_case_23.png
+Precedence graph saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/precedence_graph_case_23.png
+History diagram saved: /Users/miramadi/Desktop/Desktop Folders/Masters/Spring 2026/CSC621/Projects/Scheduler Project/CSC621--Scheduler-Simulator-Project/Generated Graphs & History Diagram/history_diagram_case_23.png
