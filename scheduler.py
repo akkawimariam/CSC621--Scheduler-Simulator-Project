@@ -4,6 +4,8 @@ Analyzes: Conflict-Serializability, Recoverability, ACA, Strict, Rigorous.
 Returns step-by-step explanations for each property.
 """
 
+from collections import defaultdict, deque
+
 from schedule import Schedule
 from precedence_graph import PrecedenceGraph
 
@@ -39,38 +41,37 @@ class Scheduler:
         self._abort_index = abort_index
         return commit_index, abort_index
 
-    def _aborted_before(self, tid, p, abort_index):
-        return abort_index.get(tid) is not None and abort_index[tid] < p
-
     def _read_from_pairs(self):
-        """Compute read-from pairs. Result cached for reuse by RC and ACA."""
+        """
+        Compute read-from pairs in O(n) single pass.
+        For each read r_i[x] at p, the visible writer is the last write on x before p
+        whose transaction has not aborted. Result cached for reuse by RC and ACA.
+        """
         if self._read_from_cache is not None:
             return self._read_from_cache
-        commit_index, abort_index = self._get_commit_abort_indices()
         ops = self.schedule.operations
+        # last_write_stack[x] = deque of (position, tid), most recent at left
+        last_write_stack = defaultdict(deque)
+        # written_by_tid[tid] = set of data items x that tid has written (for abort cleanup)
+        written_by_tid = defaultdict(set)
         read_from = []
-        for p_ri, op_ri in enumerate(ops):
-            if not op_ri.is_read() or op_ri.data_item is None:
-                continue
-            x = op_ri.data_item
-            ti = op_ri.transaction_id
-            writers_before = [
-                (idx, op.transaction_id)
-                for idx, op in enumerate(ops)
-                if idx < p_ri and op.data_item == x and op.is_write()
-            ]
-            if not writers_before:
-                continue
-            visible_writer = None
-            for idx, tj in reversed(writers_before):
-                if self._aborted_before(tj, p_ri, abort_index):
-                    continue
-                if ti == tj:
-                    continue  # RC/ACA only consider read-from between different transactions
-                visible_writer = tj
-                break
-            if visible_writer is not None:
-                read_from.append((ti, visible_writer, x, p_ri))
+        for p, op in enumerate(ops):
+            tid = op.transaction_id
+            x = op.data_item
+            if op.is_write():
+                if x is not None:
+                    last_write_stack[x].appendleft((p, tid))
+                    written_by_tid[tid].add(x)
+            elif op.is_abort():
+                for item in written_by_tid[tid]:
+                    while last_write_stack[item] and last_write_stack[item][0][1] == tid:
+                        last_write_stack[item].popleft()
+                written_by_tid[tid].clear()
+            elif op.is_read() and x is not None:
+                if last_write_stack[x]:
+                    _, tj = last_write_stack[x][0]
+                    if tid != tj:
+                        read_from.append((tid, tj, x, p))
         self._read_from_cache = read_from
         return read_from
 

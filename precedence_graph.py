@@ -51,20 +51,23 @@ class PrecedenceGraph:
             if op.data_item is not None:
                 ops_by_item[op.data_item].append((idx, op))
 
-        # 3️⃣ Compare only operations on same data item
+        # 3️⃣ Add edges in O(n·t): one pass per item with writers_so_far / readers_so_far
         for item_ops in ops_by_item.values():
-            for i in range(len(item_ops)):
-                idx_i, op_i = item_ops[i]
-                for j in range(i + 1, len(item_ops)):
-                    idx_j, op_j = item_ops[j]
-
-                    if op_i.transaction_id == op_j.transaction_id:
-                        continue
-
-                    if op_i.conflicts_with(op_j):
-                        self.edges.add(
-                            (op_i.transaction_id, op_j.transaction_id)
-                        )
+            writers_so_far = set()
+            readers_so_far = set()
+            for idx, op in item_ops:
+                tid = op.transaction_id
+                if op.is_read():
+                    for ti in writers_so_far:
+                        if ti != tid:
+                            self.edges.add((ti, tid))
+                    readers_so_far.add(tid)
+                else:
+                    # write (or inc/dec)
+                    for ti in writers_so_far | readers_so_far:
+                        if ti != tid:
+                            self.edges.add((ti, tid))
+                    writers_so_far.add(tid)
 
     # ---------------------------------------------------------
     # BASIC ACCESS
