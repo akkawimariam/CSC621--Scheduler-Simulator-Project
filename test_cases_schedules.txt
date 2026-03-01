@@ -328,3 +328,81 @@ History: start1 inc1[x] start2 inc2[y] start3 inc3[z] dec3[x] dec1[y] dec2[z] c1
 #     So NOT Strict
 #   - Rigorous: Also NO
 # Expected: RC=YES, ACA=YES, ST=NO, Rigorous=NO, SR=NO
+
+# ==========================================================
+# 12. BASIC 2PL / STRICT 2PL (Chapter 3 style)
+# ==========================================================
+
+# Case 10.1 — Basic 2PL (SR=YES, RC=YES, ACA=NO, ST=NO)
+Number of transactions: 2
+Transaction 1: T1: start1 w1[x] c1
+Transaction 2: T2: start2 r2[x] w2[y] c2
+History: start1 w1[x] start2 r2[x] w2[y] c1 c2
+# Expected: T1→T2, SR=YES, RC=YES, ACA=NO, ST=NO
+
+# Case 10.2 — Basic 2PL (SR=YES, RC=YES, ACA=YES, ST=NO)
+Number of transactions: 2
+Transaction 1: T1: start1 w1[x] c1
+Transaction 2: T2: start2 w2[x] c2
+History: start1 w1[x] start2 w2[x] c1 c2
+# Expected: T1→T2, SR=YES, RC=YES, ACA=YES, ST=NO
+
+# Case 10.3 — Strict 2PL (SR=YES, RC=YES, ACA=YES, ST=YES, Rigorous=NO)
+Number of transactions: 2
+Transaction 1: T1: start1 r1[x] w1[y] c1
+Transaction 2: T2: start2 r2[x] w2[z] c2
+History: start1 r1[x] w1[y] c1 start2 r2[x] w2[z] c2
+# Expected: T1→T2, SR=YES, RC=YES, ACA=YES, ST=YES, Rigorous=NO
+
+# Case 10.4 — Rigorous 2PL (SR=YES, RC=YES, ACA=YES, ST=YES, Rigorous=YES)
+Number of transactions: 2
+Transaction 1: T1: start1 r1[x] w1[x] c1
+Transaction 2: T2: start2 r2[x] w2[y] c2
+History: start1 r1[x] w1[x] c1 start2 r2[x] w2[y] c2
+# Expected: T1→T2, SR=YES, RC=YES, ACA=YES, ST=YES, Rigorous=YES
+
+# Case 11.1 — Basic 2PL (SR=YES, RC=NO, ACA=NO, ST=NO) — dirty read, non-recoverable
+Number of transactions: 2
+Transaction 1: T1: start1 w1[x] a1
+Transaction 2: T2: start2 r2[x] c2
+History: start1 w1[x] start2 r2[x] c2 a1
+# Expected: T1→T2, SR=YES, RC=NO, ACA=NO, ST=NO
+
+# Case 11.2 — Basic 2PL (SR=YES, RC=YES, ACA=NO, ST=NO)
+Number of transactions: 3
+Transaction 1: T1: start1 w1[x] c1
+Transaction 2: T2: start2 r2[x] w2[y] c2
+Transaction 3: T3: start3 r3[y] c3
+History: start1 w1[x] start2 r2[x] w2[y] start3 r3[y] c1 c2 c3
+# Expected: T1→T2, T2→T3, SR=YES, RC=YES, ACA=NO, ST=NO
+
+# Case 11.3 — Basic 2PL (SR=YES, RC=YES, ACA=YES, ST=NO)
+Number of transactions: 2
+Transaction 1: T1: start1 w1[x] c1
+Transaction 2: T2: start2 w2[x] w2[y] c2
+History: start1 w1[x] start2 w2[x] w2[y] c1 c2
+# Expected: T1→T2, SR=YES, RC=YES, ACA=YES, ST=NO
+
+# Case 11.4 — Strict 2PL (3 transactions chain)
+Number of transactions: 3
+Transaction 1: T1: start1 w1[x] c1
+Transaction 2: T2: start2 r2[x] w2[y] c2
+Transaction 3: T3: start3 r3[y] w3[z] c3
+History: start1 w1[x] c1 start2 r2[x] w2[y] c2 start3 r3[y] w3[z] c3
+# Expected: T1→T2, T2→T3, SR=YES, RC=YES, ACA=YES, ST=YES
+
+# Case 11.5 — Strict 2PL (parallel non-conflicting reads)
+Number of transactions: 3
+Transaction 1: T1: start1 r1[x] w1[y] c1
+Transaction 2: T2: start2 r2[x] w2[z] c2
+Transaction 3: T3: start3 r3[y] c3
+History: start1 r1[x] w1[y] c1 start2 r2[x] w2[z] c2 start3 r3[y] c3
+# Expected: T1→T3 (y), SR=YES, RC=YES, ACA=YES, ST=YES
+
+# Case 11.6 — Rigorous 2PL (full commit separation)
+Number of transactions: 3
+Transaction 1: T1: start1 r1[x] w1[x] c1
+Transaction 2: T2: start2 r2[x] w2[y] c2
+Transaction 3: T3: start3 r3[y] c3
+History: start1 r1[x] w1[x] c1 start2 r2[x] w2[y] c2 start3 r3[y] c3
+# Expected: T1→T2, T2→T3, SR=YES, RC=YES, ACA=YES, ST=YES, Rigorous=YES

@@ -6,14 +6,17 @@ A Python-based transaction scheduler simulator that analyzes database schedules 
 
 ```
 .
-├── operation.py        # Operation class (START, READ, WRITE, INCREMENT, DECREMENT, COMMIT, ABORT)
-├── transaction.py      # Transaction class (collection of operations)
-├── schedule.py         # Schedule class (history of operations)
-├── scheduler.py        # Scheduler class (analyzer; uses precedence graph for SR)
-├── precedence_graph.py # Precedence graph from schedule (conflict edges, cycle check, DOT/PNG)
-├── parser.py           # Parser for user input (transaction sequences and schedules)
-├── main.py             # Main entry point with user interaction
-└── README.md           # This file
+├── operation.py          # Operation class (START, READ, WRITE, INCREMENT, DECREMENT, COMMIT, ABORT)
+├── transaction.py       # Transaction class (collection of operations)
+├── schedule.py           # Schedule class (history of operations)
+├── scheduler.py          # Scheduler class (analyzer; uses precedence graph for SR)
+├── precedence_graph.py   # Precedence graph from schedule (conflict edges, cycle check, DOT/PNG)
+├── parser.py             # Parser for user input (transaction sequences and schedules)
+├── main.py               # Main entry point (CLI)
+├── api.py                # Flask API for the web UI (analyze, test-cases, generate); logs all requests
+├── requirements-api.txt  # Flask + flask-cors for the API
+├── frontend/             # React (Vite) web UI; calls the API for analysis
+└── README.md             # This file
 ```
 
 ## Classes Overview
@@ -60,12 +63,91 @@ Parses user input:
 - `parse_transaction()` - Parse transaction sequences
 - `parse_schedule()` - Parse schedule/history
 
+## How each feature is computed
+
+The system analyzes schedules in two stages: (1) **parsing** the schedule string into operations and transactions, and (2) **analysis** by the scheduler, precedence graph, and locking modules. Below is how each property is determined.
+
+### Parsing (`parser.py`)
+
+- **Input:** A single history string (e.g. `start1 r1[x] w1[x] start2 r2[x] w2[y] c1 c2`) and optionally per-transaction strings (e.g. `T1: start1 r1[x] w1[x] c1`).
+- **Process:** `Parser.parse_schedule(history_string)` tokenizes the string into operation tokens, builds an `Operation` for each (type, transaction ID, data item), and assembles a `Schedule` (ordered list of operations + map of transaction ID → `Transaction`).
+- **Validation:** Each transaction in the schedule must **begin with START** (e.g. `start1`) and **end with COMMIT or ABORT** (e.g. `c1` or `a2`). Missing START or COMMIT/ABORT yields a clear error (e.g. "Transaction T1 must begin with START...").
+
+### Conflict serializability (`scheduler.py` + `precedence_graph.py`)
+
+- **Idea:** A schedule is conflict-serializable iff its **precedence (serialization) graph** is **acyclic**.
+- **Precedence graph:** Built from the schedule: **nodes** = all transactions; **edge T_i → T_j** iff for some data item x, an operation of T_i conflicts with and **precedes** an operation of T_j in the schedule (conflict = read-write, write-read, or write-write on the same item).
+- **Computation:** `PrecedenceGraph(schedule)` builds nodes and edges; `has_cycle()` (DFS) detects a cycle; if acyclic, `topological_order()` gives an equivalent serial order (e.g. T1 → T2 → T3).
+- **Output:** Boolean (serializable or not), optional serial order, explanation, and step-by-step steps (build graph, list edges, report cycle or topological order).
+
+### Recoverability (RC) (`scheduler.py`)
+
+- **Idea:** For every **read-from** pair (T_i reads x from T_j), if T_i commits then T_j must commit and **c_j < c_i** (writer commits before reader).
+- **Computation:** `_read_from_pairs()` does one pass over the schedule: for each read r_i[x], find the "visible" writer T_j (last write on x before this read, ignoring aborted transactions). Then for each such (T_i, T_j), check commit indices: if T_i commits, require T_j committed and at an earlier position.
+- **Output:** Boolean (recoverable or not), explanation, and step-by-step steps (read-from pairs, rule, per-pair check, summary).
+
+### Avoids cascading aborts (ACA) (`scheduler.py`)
+
+- **Idea:** No transaction reads a value written by an **uncommitted** transaction. For each read-from (T_i, T_j, x), we need **c_j < p** where p is the position of the read (writer committed before the read).
+- **Computation:** Uses the same read-from pairs as RC. For each pair, check that the writer T_j has committed **before** the read's position (commit_index[T_j] < p).
+- **Output:** Boolean (avoids cascading aborts or not), explanation, and step-by-step steps (read-from pairs, rule, per-pair check, summary).
+
+### Strict (ST) (`scheduler.py`)
+
+- **Idea:** No transaction reads or writes a data item x until the transaction that **last wrote** x has committed or aborted.
+- **Computation:** Single pass over the schedule; for each data item x maintain "last writer" (position, transaction). For each read/write on x at position p, require that the last writer of x has either committed or aborted at some position before p.
+- **Output:** Boolean (strict or not), explanation, and step-by-step steps (rule, per-position check, violations if any, summary).
+
+### Rigorous (`scheduler.py`)
+
+- **Idea:** No read or write on x until the transaction that **last read or wrote** x has committed or aborted (stricter than strict: last **action** on x, not only last writer).
+- **Computation:** Single pass; for each data item x maintain "last action" (position, transaction) for both reads and writes. For each read/write on x at position p (by another transaction), require that the last actor on x has committed or aborted before p.
+- **Output:** Boolean (rigorous or not), explanation, and step-by-step steps (rule, per-position check, violations if any, summary).
+
+### 2PL and Strict 2PL (`locking.py`)
+
+- **Idea (Strict 2PL):** Locks are acquired **before** each data operation and released **only at commit or abort**. No early release.
+- **Computation:** `validate_2pl_strict2pl(schedule)` simulates the canonical lock sequence: for each operation in order, if it's a data op (read/write on x), try to grant the required lock (read or write) on x; if another transaction holds an incompatible lock, record a conflict and set "follows Strict 2PL" to false. Lock steps are tied to schedule operations (e.g. "Before r1[x]: …", "Schedule operation w2[x]: …"). At commit/abort, all locks held by that transaction are released. A final "(result)" step states whether conditions hold or not.
+- **Basic 2PL:** If Strict 2PL fails (e.g. lock conflict), the system still checks Basic 2PL via `_follows_basic_2pl(schedule)`: no transaction may **acquire** a lock **after** it has **released** any lock (growing then shrinking phase).
+- **Output:** Two booleans (follows Strict 2PL, follows Basic 2PL), and a list of steps with `event` and `explanation` (lock commands rl/wl/ru/wu, schedule operations, and final result explanation).
+
+### Schedule generation (`schedule_generator.py`, `schedule_generator_2pl.py`)
+
+- **Random:** `ScheduleGenerator` generates transaction programs and then interleaves operations (with optional aborts) to produce a history string.
+- **2PL / Strict 2PL:** `generate_schedule_with_protocol(transactions_list, mode, seed)` simulates a locking protocol: **Strict 2PL** = acquire lock before each read/write, release all at commit/abort; **Basic 2PL** = same but allows early release after last use of an item. The generated history is the sequence of data operations and commit/abort as ordered by the protocol.
+
 ## Usage
+
+### Option 1: Command-line (Python only)
 
 Run the main program:
 ```bash
 python main.py
 ```
+
+### Option 2: Web UI (React + Python API)
+
+The frontend is a **React** app (Vite). To run the full stack:
+
+1. **Backend (Python API)**  
+   In one terminal, from the project root:
+   ```bash
+   pip install -r requirements-api.txt
+   python api.py
+   ```
+   The API runs at `http://localhost:5000` and logs each request.
+
+2. **Frontend (React)**  
+   In a second terminal, from the project root:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+   This starts the Vite dev server (React). Open the URL shown (e.g. `http://localhost:5173`). The UI talks to the API at `http://localhost:5000` (via Vite proxy if configured).
+
+3. **Using the UI**  
+   Use **Manual Input**, **Run Test Cases**, or **Generate Schedule**. For generation you can choose mode: **Random**, **2PL**, or **Strict 2PL**. Schedules must include `start1`, `start2`, etc.; see Input Format below.
 
 ### Input Format
 
@@ -128,20 +210,12 @@ Type `quit`, `exit`, or `q` at any prompt to terminate the program.
 - ✅ Basic structure and classes
 - ✅ Parser for transactions and schedules (with well-formedness: START, COMMIT/ABORT)
 - ✅ User input handling
-- ✅ Conflict-serializability analysis (precedence graph, cycle check, serial order, cycle path when not SR)
-- ✅ Precedence graph generation and visualization (DOT/PNG)
-- ✅ Recoverability (RC) and ACA analysis with step-by-step explanation and summary
-- ✅ Strict (ST) analysis with step-by-step explanation
-- ✅ Rigorous analysis with step-by-step explanation
-- ✅ Detection of violations with step-by-step explanation (bonus)
-- ✅ Visualization of precedence graphs (bonus)
-- ⏳ Schedule generation (optional bonus)
-- ⏳ Extension to locking protocols (2PL, strict 2PL) (optional bonus)
-
-## Optional Next Steps (Bonus)
-
-- Schedule generation: generate histories that aim for SR/RC/ACA/Strict/Rigorous, then classify to verify.
-- 2PL / Strict 2PL: generate schedules using a locking protocol, then classify to verify.
+- ✅ Conflict-serializability analysis (precedence graph, cycle check, serial order, step-by-step)
+- ✅ Recoverability (RC), ACA, Strict (ST), Rigorous with step-by-step explanations
+- ✅ 2PL and Strict 2PL validation with step-by-step lock explanation (schedule-operation–aware)
+- ✅ Schedule generation (Random, 2PL, Strict 2PL) via API and CLI
+- ✅ Precedence graph and history diagram generation and visualization
+- ✅ Web UI (React + Vite) and Flask API
 
 ## Next Steps
 

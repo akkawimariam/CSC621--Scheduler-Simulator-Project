@@ -10,7 +10,8 @@ from scheduler import Scheduler
 from parser import Parser
 from history_diagram import HistoryDiagram
 from schedule_generator import ScheduleGenerator
-from locking import Strict2PLHistory
+from schedule_generator_2pl import generate_schedule_with_protocol
+from locking import Strict2PLHistory, validate_2pl_strict2pl
 
 # Output folder for precedence graph and history diagram (relative to this file)
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -181,6 +182,67 @@ TEST_CASES = [
         "transactions": ["T1: start1 inc1[x] dec1[y] c1", "T2: start2 inc2[y] dec2[z] c2", "T3: start3 inc3[z] dec3[x] c3"],
         "history": "start1 inc1[x] start2 inc2[y] start3 inc3[z] dec3[x] dec1[y] dec2[z] c1 c2 c3",
     },
+        # --- 12. Basic 2PL / Strict 2PL (Chapter 3 style) ---
+    {
+        "label": "Case 12.1 — Basic 2PL (SR=YES, RC=YES, ACA=NO, ST=NO)",
+        "num_txns": 2,
+        "transactions": ["T1: start1 w1[x] c1", "T2: start2 r2[x] w2[y] c2"],
+        "history": "start1 w1[x] start2 r2[x] w2[y] c1 c2",
+    },
+    {
+        "label": "Case 12.2 — Basic 2PL (SR=YES, RC=YES, ACA=YES, ST=NO)",
+        "num_txns": 2,
+        "transactions": ["T1: start1 w1[x] c1", "T2: start2 w2[x] c2"],
+        "history": "start1 w1[x] start2 w2[x] c1 c2",
+    },
+    {
+        "label": "Case 12.3 — Strict 2PL (SR=YES, ST=YES, Rigorous=NO)",
+        "num_txns": 2,
+        "transactions": ["T1: start1 r1[x] w1[y] c1", "T2: start2 r2[x] w2[z] c2"],
+        "history": "start1 r1[x] w1[y] c1 start2 r2[x] w2[z] c2",
+    },
+    {
+        "label": "Case 12.4 — Rigorous 2PL (SR=YES, ST=YES, Rigorous=YES)",
+        "num_txns": 2,
+        "transactions": ["T1: start1 r1[x] w1[x] c1", "T2: start2 r2[x] w2[y] c2"],
+        "history": "start1 r1[x] w1[x] c1 start2 r2[x] w2[y] c2",
+    },
+    {
+        "label": "Case 12.5 — Basic 2PL (SR=YES, RC=NO, ACA=NO, ST=NO)",
+        "num_txns": 2,
+        "transactions": ["T1: start1 w1[x] a1", "T2: start2 r2[x] c2"],
+        "history": "start1 w1[x] start2 r2[x] c2 a1",
+    },
+    {
+        "label": "Case 12.6 — Basic 2PL (SR=YES, RC=YES, ACA=NO, ST=NO)",
+        "num_txns": 3,
+        "transactions": ["T1: start1 w1[x] c1", "T2: start2 r2[x] w2[y] c2", "T3: start3 r3[y] c3"],
+        "history": "start1 w1[x] start2 r2[x] w2[y] start3 r3[y] c1 c2 c3",
+    },
+    {
+        "label": "Case 12.7 — Basic 2PL (SR=YES, RC=YES, ACA=YES, ST=NO)",
+        "num_txns": 2,
+        "transactions": ["T1: start1 w1[x] c1", "T2: start2 w2[x] w2[y] c2"],
+        "history": "start1 w1[x] start2 w2[x] w2[y] c1 c2",
+    },
+    {
+        "label": "Case 12.8 — Strict 2PL (3 txns chain)",
+        "num_txns": 3,
+        "transactions": ["T1: start1 w1[x] c1", "T2: start2 r2[x] w2[y] c2", "T3: start3 r3[y] w3[z] c3"],
+        "history": "start1 w1[x] c1 start2 r2[x] w2[y] c2 start3 r3[y] w3[z] c3",
+    },
+    {
+        "label": "Case 12.9 — Strict 2PL (parallel non-conflicting reads)",
+        "num_txns": 3,
+        "transactions": ["T1: start1 r1[x] w1[y] c1", "T2: start2 r2[x] w2[z] c2", "T3: start3 r3[y] c3"],
+        "history": "start1 r1[x] w1[y] c1 start2 r2[x] w2[z] c2 start3 r3[y] c3",
+    },
+    {
+        "label": "Case 12.10 — Rigorous 2PL (full commit separation)",
+        "num_txns": 3,
+        "transactions": ["T1: start1 r1[x] w1[x] c1", "T2: start2 r2[x] w2[y] c2", "T3: start3 r3[y] c3"],
+        "history": "start1 r1[x] w1[x] c1 start2 r2[x] w2[y] c2 start3 r3[y] c3",
+    },
 ]
 
 
@@ -244,6 +306,17 @@ def print_analysis_results(results):
 
     print("\n" + "="*60 + "\n")
 
+def print_2pl_validation(schedule):
+    """Print 2PL / Strict 2PL validation (follows2PL, followsStrict2PL, step-by-step)."""
+    follows_strict, follows_2pl, steps = validate_2pl_strict2pl(schedule)
+    print("\n--- 2PL / Strict 2PL validation ---")
+    print(f"  Follows Strict 2PL: {'YES' if follows_strict else 'NO'}")
+    print(f"  Follows 2PL:        {'YES' if follows_2pl else 'NO'}")
+    print("  Step-by-step (rl, wl, ru, wu):")
+    for s in steps:
+        print(f"    {s['event']}  ->  {s['explanation']}")
+    print()
+
 def run_test_case(tc, graph_filename=None):
     """
     Run analysis for one test case (from TEST_CASES).
@@ -254,6 +327,8 @@ def run_test_case(tc, graph_filename=None):
     results = scheduler.analyze()
     print_analysis_results(results)
 
+    print_2pl_validation(schedule)
+
     base = graph_filename or "precedence_graph"
     pg = scheduler.get_precedence_graph()
     hd = HistoryDiagram(schedule)
@@ -262,6 +337,8 @@ def run_test_case(tc, graph_filename=None):
     pg.print_graph()
     print("\n--- History diagram (terminal) ---")
     hd.print_ascii()
+    print("\n--- Strict 2PL lock history ---")
+    Strict2PLHistory(schedule).print_ascii()
     print()
 
     try:
@@ -333,12 +410,16 @@ def run_manual_mode():
     results = scheduler.analyze()
     print_analysis_results(results)
 
+    print_2pl_validation(schedule)
+
     pg = scheduler.get_precedence_graph()
     hd = HistoryDiagram(schedule)
     print()
     pg.print_graph()
     print("\n--- History diagram (terminal) ---")
     hd.print_ascii()
+    print("\n--- Strict 2PL lock history ---")
+    Strict2PLHistory(schedule).print_ascii()
     print()
 
     try:
@@ -399,8 +480,16 @@ def run_automatic_mode():
 
 
 def run_generation_mode():
-    """Bonus: generate random transactions and history, then analyze."""
-    print("\nRandom schedule generation.")
+    """Schedule generation: choose Interleaving, 2PL, or Strict 2PL, then generate and analyze."""
+    print("\n--- Schedule generation ---")
+    print("  1 - Interleaving (random)")
+    print("  2 - 2PL (Basic 2PL, early release allowed)")
+    print("  3 - Strict 2PL (release only at commit/abort)")
+    gen_choice = input("Choice (1, 2, or 3): ").strip()
+    if gen_choice not in ("1", "2", "3"):
+        print("Invalid choice. Using 1 (Interleaving).")
+        gen_choice = "1"
+    
     try:
         num_txns_input = input("Enter number of transactions (e.g., 2 or 3): ").strip()
         if num_txns_input.lower() in ["q", "quit", "exit"]:
@@ -437,6 +526,19 @@ def run_generation_mode():
         print(f"Error generating schedule: {e}\n")
         return
 
+    # If 2PL or Strict 2PL, re-generate schedule using the protocol (same transactions)
+    if gen_choice in ("2", "3"):
+        mode = "strict2pl" if gen_choice == "3" else "2pl"
+        transactions_list = []
+        for s in txn_strings:
+            part = s.split(":", 1)[1].strip() if ":" in s else s
+            transactions_list.append(part.split())
+        try:
+            history = generate_schedule_with_protocol(transactions_list, mode)
+        except Exception as e:
+            print(f"Error generating {mode} schedule: {e}\n")
+            return
+
     print("\nGenerated transactions:")
     for s in txn_strings:
         print("  " + s)
@@ -454,6 +556,8 @@ def run_generation_mode():
     scheduler = Scheduler(schedule)
     results = scheduler.analyze()
     print_analysis_results(results)
+
+    print_2pl_validation(schedule)
 
     pg = scheduler.get_precedence_graph()
     hd = HistoryDiagram(schedule)
@@ -492,8 +596,8 @@ def main():
         try:
             print("Input mode:")
             print("  1 - Manual (enter transactions and history yourself)")
-            print("  2 - Automatic (run a test case from the built-in list)")
-            print("  3 - Random schedule generation")
+            print("  2 - Test cases (run a test case from the built-in list)")
+            print("  3 - Schedule generation (Interleaving, 2PL, or Strict 2PL)")
             mode_input = input("Choice (1, 2, 3, or q to quit): ").strip().lower()
             if mode_input in ['quit', 'exit', 'q']:
                 print("Exiting program. Goodbye!")
