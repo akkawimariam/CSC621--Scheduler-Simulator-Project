@@ -187,18 +187,25 @@ class Scheduler:
     def is_strict(self):
         """
         Check if the schedule is strict (ST).
-        No transaction reads or writes a data item until the transaction that
-        last wrote that item has committed or aborted.
+        From the notes (Chapter 2):
+        STRICT (ST) if whenever w_j[x] < o_i[x] (i != j), either a_j < o_i[x]
+        or c_j < o_i[x]. In words: **no transaction reads or writes a data
+        item until the *other* transaction that previously wrote it has
+        committed or aborted.**
+
+        We therefore only constrain operations of *different* transactions;
+        a transaction may freely read/write its own uncommitted updates.
+
         Returns:
             tuple: (is_strict: bool, explanation: str, steps: list)
         """
         commit_index, abort_index = self._get_commit_abort_indices()
         ops = self.schedule.operations
         steps = []
-        steps.append("Strict: No transaction reads or writes x until the transaction that last wrote x has committed or aborted.")
-        steps.append("Rule: For each read/write on x at position p, the last writer of x must have committed or aborted before p.")
+        steps.append("Strict (ST): Whenever wj[x] < oi[x] for i != j, transaction Tj must have committed or aborted before oi[x].")
+        steps.append("Rule: For each read/write on x at position p by Ti, if the last writer of x is a different transaction Tj, then Tj must have committed or aborted before p.")
 
-        last_write = {}  # data_item -> (position, tid)
+        last_write = {}  # data_item -> (position, tid) for the last write on x
         violations = []
 
         for p, op in enumerate(ops):
@@ -208,20 +215,26 @@ class Scheduler:
             if not (op.is_read() or op.is_write()):
                 continue
 
+            ti = op.transaction_id
+
             if x in last_write:
                 idx_last, tj = last_write[x]
-                cj = commit_index.get(tj)
-                aj = abort_index.get(tj)
-                if cj is not None and cj < p:
-                    # OK - do not add a step per position
-                    pass
-                elif aj is not None and aj < p:
-                    # OK - do not add a step per position
-                    pass
-                else:
-                    msg = f"At position {p} ({op}): last writer of {x} is T{tj} (at {idx_last}); T{tj} has not committed or aborted before p. Violation."
-                    violations.append((p, op, x, tj, idx_last))
-                    steps.append(msg)
+                if tj != ti:
+                    cj = commit_index.get(tj)
+                    aj = abort_index.get(tj)
+                    if cj is not None and cj < p:
+                        # Last writer is another transaction that has already committed before this access.
+                        pass
+                    elif aj is not None and aj < p:
+                        # Last writer is another transaction that has already aborted before this access.
+                        pass
+                    else:
+                        msg = (
+                            f"At position {p} ({op}): last writer of {x} is T{tj} (at {idx_last}); "
+                            f"T{tj} has not committed or aborted before this access by T{ti}. Violation."
+                        )
+                        violations.append((p, op, x, tj, idx_last, ti))
+                        steps.append(msg)
             else:
                 steps.append(f"At position {p} ({op}): first access to {x}. OK (no previous writer).")
 
@@ -230,76 +243,126 @@ class Scheduler:
 
         if violations:
             expl = "Not strict: " + "; ".join(
-                f"at position {v[0]} ({v[1]}), last writer T{v[3]} of {v[2]} had not committed or aborted"
+                f"at position {v[0]} ({v[1]}), last writer T{v[3]} of {v[2]} "
+                f"had not committed or aborted before T{v[5]}'s access"
                 for v in violations
             )
             steps.append(f"Summary: {len(violations)} violation(s); schedule is not strict.")
             steps.append("Conclusion: Schedule is not strict.")
             return False, expl, steps
 
-        steps.append("Summary: All read/write positions satisfy the rule (last writer of each item had committed or aborted before the operation).")
-        steps.append("Conclusion: Schedule is strict (every read/write on x is after the last writer of x committed or aborted).")
-        return True, "No transaction reads or writes a data item before the transaction that last wrote it has committed or aborted.", steps
+        steps.append("Summary: All read/write positions satisfy the rule (for every access by Ti, any previous writer Tj != Ti had already committed or aborted).")
+        steps.append("Conclusion: Schedule is strict (no transaction reads or overwrites data written by an uncommitted *other* transaction).")
+        return True, "No transaction reads or writes a data item written by another transaction before that writer has committed or aborted.", steps
 
     def is_rigorous(self):
         """
         Check if the schedule is rigorous.
-        No read or write on x until the transaction that last read or wrote x
-        has committed or aborted.
+        From the notes (Chapter 1):
+        - Strict executions:
+          1) Delay Read(x) until all transactions that previously wrote x commit/abort.
+          2) Delay Write(x) until all transactions that previously wrote x commit/abort.
+        - Rigorous executions = Strict PLUS:
+          3) Delay Write(x) until all transactions that previously *read* x commit/abort.
+
+        So rigorously:
+        - Reads obey the same rule as Strict (only previous WRITERS matter).
+        - Writes must wait for *both* previous readers and previous writers of x (from
+          other transactions) to commit/abort.
+
         Returns:
             tuple: (is_rigorous: bool, explanation: str, steps: list)
         """
         commit_index, abort_index = self._get_commit_abort_indices()
         ops = self.schedule.operations
         steps = []
-        steps.append("Rigorous: No read or write on x until the transaction that last read or wrote x has committed or aborted.")
-        steps.append("Rule: For each read/write on x at position p, the last action (read or write) on x must be from a transaction that committed or aborted before p.")
+        steps.append(
+            "Rigorous: Strict plus, for every write w_i[x], all transactions that previously read x must have committed or aborted."
+        )
+        steps.append(
+            "Rules:\n"
+            "  - Reads r_i[x]: like Strict, all previous writes w_j[x] (j != i) must have committed or aborted before r_i[x].\n"
+            "  - Writes w_i[x]: all previous reads r_j[x] and writes w_j[x] on x by j != i must have committed or aborted before w_i[x]."
+        )
 
-        last_action = {}  # data_item -> (position, tid) of last read or write
         violations = []
 
         for p, op in enumerate(ops):
             if op.data_item is None:
                 continue
             x = op.data_item
+            ti = op.transaction_id
+
+            # Only reads and writes (including inc/dec) participate.
             if not (op.is_read() or op.is_write()):
                 continue
 
-            if x in last_action:
-                idx_last, tj = last_action[x]
-                ti = op.transaction_id
-                if ti == tj:
-                    # Same transaction: no need to commit/abort between its own read and write
-                    pass
-                else:
+            if op.is_read():
+                # Strict rule: check all previous writes w_j[x] from other transactions.
+                for q in range(p):
+                    prev = ops[q]
+                    if prev.data_item != x:
+                        continue
+                    if not prev.is_write():
+                        continue
+                    tj = prev.transaction_id
+                    if tj == ti:
+                        continue
                     cj = commit_index.get(tj)
                     aj = abort_index.get(tj)
                     if cj is not None and cj < p:
-                        pass
-                    elif aj is not None and aj < p:
-                        pass
-                    else:
-                        msg = f"At position {p} ({op}): last action on {x} is by T{tj} (at {idx_last}); T{tj} has not committed or aborted before p. Violation."
-                        violations.append((p, op, x, tj, idx_last))
-                        steps.append(msg)
+                        continue
+                    if aj is not None and aj < p:
+                        continue
+                    msg = (
+                        f"At position {p} ({op}): previous write on {x} by T{tj} at position {q} has not "
+                        f"committed or aborted before this read. Violation."
+                    )
+                    violations.append((p, op, x, tj, q, ti))
+                    steps.append(msg)
+                    break
             else:
-                steps.append(f"At position {p} ({op}): first access to {x}. OK (no previous read or write).")
-
-            # Update last action on x (both read and write count)
-            last_action[x] = (p, op.transaction_id)
+                # Write (or INC/DEC): must wait for ALL previous reads/writes on x by other transactions.
+                for q in range(p):
+                    prev = ops[q]
+                    if prev.data_item != x:
+                        continue
+                    if not (prev.is_read() or prev.is_write()):
+                        continue
+                    tj = prev.transaction_id
+                    if tj == ti:
+                        continue
+                    cj = commit_index.get(tj)
+                    aj = abort_index.get(tj)
+                    if cj is not None and cj < p:
+                        continue
+                    if aj is not None and aj < p:
+                        continue
+                    kind = "write" if prev.is_write() else "read"
+                    msg = (
+                        f"At position {p} ({op}): previous {kind} on {x} by T{tj} at position {q} has not "
+                        f"committed or aborted before this write. Violation."
+                    )
+                    violations.append((p, op, x, tj, q, ti))
+                    steps.append(msg)
+                    break
 
         if violations:
             expl = "Not rigorous: " + "; ".join(
-                f"at position {v[0]} ({v[1]}), last holder T{v[3]} of {v[2]} had not committed or aborted"
+                f"at position {v[0]} ({v[1]}), previous accessor T{v[3]} of {v[2]} "
+                f"had not committed or aborted before T{v[5]}'s access"
                 for v in violations
             )
             steps.append(f"Summary: {len(violations)} violation(s); schedule is not rigorous.")
             steps.append("Conclusion: Schedule is not rigorous.")
             return False, expl, steps
 
-        steps.append("Summary: All read/write positions satisfy the rule (last reader or writer of each item had committed or aborted before the operation).")
-        steps.append("Conclusion: Schedule is rigorous.")
-        return True, "No read or write on a data item before the transaction that last read or wrote it has committed or aborted.", steps
+        steps.append(
+            "Summary: All read/write positions satisfy the rules: reads see only committed/aborted writers, "
+            "and writes occur only after all previous readers and writers on that item (from other transactions) have committed or aborted."
+        )
+        steps.append("Conclusion: Schedule is rigorous (Strict plus no writes while other transactions have uncommitted reads on the same item).")
+        return True, "Schedule is strict and no transaction writes a data item while another transaction has an uncommitted read or write on it.", steps
 
     def analyze(self):
         """Perform complete analysis. Each result dict may include 'steps' for step-by-step explanation."""

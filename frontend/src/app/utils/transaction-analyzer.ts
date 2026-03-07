@@ -569,30 +569,74 @@ function analyzeStrict(schedule: Schedule) {
 // Analyze rigorous schedule
 function analyzeRigorous(schedule: Schedule) {
   const steps: string[] = [];
-  steps.push('1. Checking if any transaction accesses data read or written by uncommitted transactions...');
+  steps.push('1. Checking rigorousness: Strict plus, for every write w_i[x], all transactions that previously read x must have committed or aborted.');
+  steps.push('   - Reads r_i[x]: like Strict, all previous writes w_j[x] (j ≠ i) must have committed/aborted before r_i[x].');
+  steps.push('   - Writes w_i[x]: all previous reads r_j[x] and writes w_j[x] on x by j ≠ i must have committed/aborted before w_i[x].');
   
-  const committedTx = new Set<number>();
-  const abortedTx = new Set<number>();
-  const lastAccessor = new Map<string, number>();
+  const endPositions = getTransactionEndPositions(schedule);
   const violations: string[] = [];
   
-  for (const op of schedule.operations) {
-    if (op.type === 'read' || op.type === 'write' || op.type === 'increment' || op.type === 'decrement') {
-      if (op.dataItem) {
-        const accessor = lastAccessor.get(op.dataItem);
-        if (accessor !== undefined && accessor !== op.transaction) {
-          if (!committedTx.has(accessor) && !abortedTx.has(accessor)) {
-            violations.push(`T${op.transaction} accesses ${op.dataItem} accessed by uncommitted T${accessor}`);
-            steps.push(`   ✗ T${op.transaction} ${op.type}s ${op.dataItem} while T${accessor} (last accessor) has not committed`);
-          }
+  const ops = schedule.operations;
+
+  for (let p = 0; p < ops.length; p++) {
+    const op = ops[p];
+    if (!op.dataItem) continue;
+
+    const x = op.dataItem;
+    const ti = op.transaction;
+    const isRead = op.type === 'read';
+    const isWrite = op.type === 'write' || op.type === 'increment' || op.type === 'decrement';
+
+    if (!isRead && !isWrite) continue;
+
+    if (isRead) {
+      // Strict rule for reads: check all previous writes w_j[x] (j ≠ i).
+      for (let q = 0; q < p; q++) {
+        const prev = ops[q];
+        if (!prev.dataItem || prev.dataItem !== x) continue;
+        const prevIsWrite =
+          prev.type === 'write' || prev.type === 'increment' || prev.type === 'decrement';
+        if (!prevIsWrite) continue;
+        const tj = prev.transaction;
+        if (tj === ti) continue;
+
+        const end = endPositions.get(tj);
+        if (!end || end.position >= p) {
+          violations.push(
+            `T${ti} reads ${x} at position ${p} while previous writer T${tj} at position ${q} has not committed/aborted`,
+          );
+          steps.push(
+            `   ✗ At position ${p} (${op.raw}): previous write on ${x} by T${tj} at ${q} has not committed/aborted.`,
+          );
+          break;
         }
-        
-        lastAccessor.set(op.dataItem, op.transaction);
       }
-    } else if (op.type === 'commit') {
-      committedTx.add(op.transaction);
-    } else if (op.type === 'abort') {
-      abortedTx.add(op.transaction);
+    } else if (isWrite) {
+      // Rigorous write rule: check all previous reads/writes on x by other transactions.
+      for (let q = 0; q < p; q++) {
+        const prev = ops[q];
+        if (!prev.dataItem || prev.dataItem !== x) continue;
+
+        const prevIsRead = prev.type === 'read';
+        const prevIsWrite =
+          prev.type === 'write' || prev.type === 'increment' || prev.type === 'decrement';
+        if (!prevIsRead && !prevIsWrite) continue;
+
+        const tj = prev.transaction;
+        if (tj === ti) continue;
+
+        const end = endPositions.get(tj);
+        if (!end || end.position >= p) {
+          const kind = prevIsWrite ? 'write' : 'read';
+          violations.push(
+            `T${ti} writes ${x} at position ${p} while previous ${kind} by T${tj} at position ${q} has not committed/aborted`,
+          );
+          steps.push(
+            `   ✗ At position ${p} (${op.raw}): previous ${kind} on ${x} by T${tj} at ${q} has not committed/aborted.`,
+          );
+          break;
+        }
+      }
     }
   }
   

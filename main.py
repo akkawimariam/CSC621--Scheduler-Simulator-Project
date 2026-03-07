@@ -37,6 +37,57 @@ def _output_path(filename):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     return os.path.join(OUTPUT_DIR, filename)
 
+
+def _validate_schedule_matches_transactions(schedule, transactions):
+    """
+    Ensure that the history (schedule) is consistent with the declared transaction programs.
+    For each T_i:
+      - The schedule must contain operations for T_i.
+      - The per-transaction sequence of operations in the schedule must match exactly
+        the declared sequence (same operations, same order).
+    Also forbids any transaction ID that was not declared.
+    Raises ValueError with a clear explanation if there is a mismatch.
+    """
+    # Map declared transactions by ID
+    declared_by_tid = {t.transaction_id: t for t in transactions}
+
+    # Check for any transaction IDs in the history that were not declared
+    for tid in schedule.transactions.keys():
+        if tid not in declared_by_tid:
+            raise ValueError(
+                f"Schedule: transaction T{tid} appears in the history but was not declared above. "
+                f"Please declare T{tid} or remove its operations from the history."
+            )
+
+    # Check that each declared transaction matches its projection in the history
+    for tid, decl_txn in declared_by_tid.items():
+        sched_txn = schedule.get_transaction(tid)
+        if sched_txn is None:
+            raise ValueError(
+                f"Schedule: no operations found for declared transaction T{tid}. "
+                f"History must include the operations of T{tid}."
+            )
+
+        decl_ops = decl_txn.operations
+        sched_ops = sched_txn.operations
+
+        if len(decl_ops) != len(sched_ops):
+            raise ValueError(
+                f"Schedule: operations for T{tid} do not match its declared transaction.\n"
+                f"  Declared T{tid}: {decl_txn}\n"
+                f"  In history T{tid}: {sched_txn}"
+            )
+
+        for idx, (op_decl, op_hist) in enumerate(zip(decl_ops, sched_ops), start=1):
+            if op_decl != op_hist:
+                raise ValueError(
+                    f"Schedule: operations for T{tid} do not match at position {idx}.\n"
+                    f"  Declared: {op_decl}\n"
+                    f"  In history: {op_hist}\n"
+                    f"  Full declared T{tid}: {decl_txn}\n"
+                    f"  Full T{tid} in history: {sched_txn}"
+                )
+
 # ---------------------------------------------------------------------------
 # Hardcoded test cases (from test_cases_schedules.txt) for automatic mode
 # ---------------------------------------------------------------------------
@@ -322,6 +373,16 @@ def run_test_case(tc, graph_filename=None):
     Run analysis for one test case (from TEST_CASES).
     Parses transactions and history, runs scheduler, prints results, saves precedence graph.
     """
+    # Show which test case is being run (label, transactions, history) before analysis
+    print("\n" + "="*60)
+    print("TEST CASE: {}".format(tc["label"]))
+    print("="*60)
+    print("Transactions:")
+    for txn_str in tc.get("transactions", []):
+        print("  {}".format(txn_str))
+    print("History: {}".format(tc["history"]))
+    print("="*60 + "\n")
+
     schedule = Parser.parse_schedule(tc["history"])
     scheduler = Scheduler(schedule)
     results = scheduler.analyze()
@@ -400,11 +461,13 @@ def run_manual_mode():
             continue
         try:
             schedule = Parser.parse_schedule(history_input)
+            # New: validate that the per-transaction history matches the declared transactions
+            _validate_schedule_matches_transactions(schedule, transactions)
             print(f"  Parsed schedule: {schedule}")
             break
         except ValueError as e:
             print(f"  Error: {e}")
-            print("  Please enter in format: r1[x] w1[x] r2[y] w2[y] c1 c2")
+            print("  Please enter a history that interleaves the declared transactions without changing their operations.")
 
     scheduler = Scheduler(schedule)
     results = scheduler.analyze()
@@ -435,25 +498,106 @@ def run_manual_mode():
             print(f"History diagram saved: {out_h}")
     except Exception as e:
         print(f"Could not save history diagram: {e}")
+
+    # Offer: test again or back to main menu
+    print("\nWhat next?")
+    print("  1 - Enter another schedule")
+    print("  2 - Back to main menu")
+    next_choice = input("Choice (1, 2, or q): ").strip().lower()
+    if next_choice in ("2", "q", "quit", "exit"):
+        return "quit"
     return None
 
 
+def _parse_test_case_choice(choice_str, max_cases):
+    """
+    Parse flexible test case selection. Returns:
+      ('all', None) for "0" (run all),
+      ('list', [1-based indices]) for a valid selection,
+      (None, error_message) for invalid input.
+    Accepted formats:
+      - 0 or all
+      - Single: 5
+      - Range: 1-5 (inclusive)
+      - Comma-separated: 1, 3, 5
+      - Combined: 1-5, 31-33  or  first 5, last 3
+      - first N  (cases 1 through N)
+      - last N   (last N cases)
+    """
+    s = choice_str.strip().lower()
+    if not s:
+        return (None, "Empty input.")
+    if s in ("0", "all"):
+        return ("all", None)
+    n = max_cases
+    parts = [p.strip() for p in s.split(",") if p.strip()]
+    indices = []
+    for p in parts:
+        if p.startswith("first "):
+            try:
+                k = int(p[6:].strip())
+                if 1 <= k <= n:
+                    indices.extend(range(1, k + 1))
+                else:
+                    return (None, "first N: N must be between 1 and {}.".format(n))
+            except ValueError:
+                return (None, "first N: N must be a number (e.g. first 5).")
+        elif p.startswith("last "):
+            try:
+                k = int(p[5:].strip())
+                if 1 <= k <= n:
+                    start = n - k + 1
+                    indices.extend(range(start, n + 1))
+                else:
+                    return (None, "last N: N must be between 1 and {}.".format(n))
+            except ValueError:
+                return (None, "last N: N must be a number (e.g. last 3).")
+        elif "-" in p and not p.startswith("-"):
+            lo_str, _, hi_str = p.partition("-")
+            lo_str, hi_str = lo_str.strip(), hi_str.strip()
+            try:
+                lo, hi = int(lo_str), int(hi_str)
+                if 1 <= lo <= hi <= n:
+                    indices.extend(range(lo, hi + 1))
+                else:
+                    return (None, "Range must be within 1 to {} (e.g. 1-5).".format(n))
+            except ValueError:
+                return (None, "Invalid range: use e.g. 1-5.")
+        else:
+            try:
+                idx = int(p)
+                if 1 <= idx <= n:
+                    indices.append(idx)
+                else:
+                    return (None, "Number must be between 1 and {}.".format(n))
+            except ValueError:
+                return (None, "Invalid part '{}'. Use a number, range (1-5), first N, last N, or comma-separated list.".format(p))
+    indices = sorted(set(indices))
+    return ("list", indices)
+
+
 def run_automatic_mode():
-    """Menu of test cases: pick one, run all, or quit."""
+    """Menu of test cases: pick one, a range, several, or all; then run."""
+    n = len(TEST_CASES)
     while True:
         print("\n--- Test cases ---")
         for i, tc in enumerate(TEST_CASES, 1):
             print(f"  {i:2}. {tc['label']}")
         print("   0. Run ALL test cases")
         print("   q. Back to mode selection")
-        choice = input("Select test case (1-{}, 0, or q): ".format(len(TEST_CASES))).strip().lower()
-        if choice == 'q':
+        print("\n  Examples: 5  |  1-5  |  1,3,5  |  1-5, 31-33  |  first 5  |  last 3")
+        choice = input("Select test case(s) (1-{}, 0, range, or q): ".format(n)).strip()
+        if choice.lower() == "q":
             return
-        if choice == '0':
+        kind, payload = _parse_test_case_choice(choice, n)
+        if kind is None:
+            print("  Error: {}".format(payload))
+            continue
+        if kind == "all":
             from datetime import datetime
             log_name = "all_test_cases_output_{}.txt".format(datetime.now().strftime("%Y%m%d_%H%M%S"))
             log_path = _output_path(log_name)
-            with open(log_path, 'w', encoding='utf-8') as log_file:
+            with open(log_path, "w", encoding="utf-8") as log_file:
                 tee = Tee(log_file)
                 old_stdout = sys.stdout
                 sys.stdout = tee
@@ -467,16 +611,12 @@ def run_automatic_mode():
                     sys.stdout = old_stdout
             print("\nFull output saved to: {}".format(log_path))
             continue
-        try:
-            idx = int(choice)
-            if 1 <= idx <= len(TEST_CASES):
-                tc = TEST_CASES[idx - 1]
-                print("\nRunning: {}".format(tc["label"]))
-                run_test_case(tc, graph_filename="precedence_graph_case_{}".format(idx))
-            else:
-                print("Invalid number. Enter 1-{}, 0, or q.".format(len(TEST_CASES)))
-        except ValueError:
-            print("Invalid input. Enter a number or q.")
+        # kind == 'list', payload == list of 1-based indices
+        indices = payload
+        print("\nRunning {} test case(s): {}.\n".format(len(indices), ", ".join(str(i) for i in indices)))
+        for idx in indices:
+            tc = TEST_CASES[idx - 1]
+            run_test_case(tc, graph_filename="precedence_graph_case_{}".format(idx))
 
 
 def run_generation_mode():
