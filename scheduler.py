@@ -41,6 +41,13 @@ class Scheduler:
         self._abort_index = abort_index
         return commit_index, abort_index
 
+    def _committed_or_aborted_before(self, tid, p):
+        """Return True iff transaction tid has committed or aborted before position p. O(1)."""
+        commit_index, abort_index = self._get_commit_abort_indices()
+        cj = commit_index.get(tid)
+        aj = abort_index.get(tid)
+        return (cj is not None and cj < p) or (aj is not None and aj < p)
+
     def _read_from_pairs(self):
         """
         Compute read-from pairs in O(n) single pass.
@@ -199,7 +206,6 @@ class Scheduler:
         Returns:
             tuple: (is_strict: bool, explanation: str, steps: list)
         """
-        commit_index, abort_index = self._get_commit_abort_indices()
         ops = self.schedule.operations
         steps = []
         steps.append("Strict (ST): Whenever wj[x] < oi[x] for i != j, either aj < oi[x] or cj < oi[x] (i.e. no read or write on x until the transaction that previously wrote x has terminated by committing or aborting).")
@@ -219,22 +225,13 @@ class Scheduler:
 
             if x in last_write:
                 idx_last, tj = last_write[x]
-                if tj != ti:
-                    cj = commit_index.get(tj)
-                    aj = abort_index.get(tj)
-                    if cj is not None and cj < p:
-                        # Last writer is another transaction that has already committed before this access.
-                        pass
-                    elif aj is not None and aj < p:
-                        # Last writer is another transaction that has already aborted before this access.
-                        pass
-                    else:
-                        msg = (
-                            f"At position {p} ({op}): last writer of {x} is T{tj} (at {idx_last}); "
-                            f"T{tj} has not committed or aborted before this access by T{ti}. Violation."
-                        )
-                        violations.append((p, op, x, tj, idx_last, ti))
-                        steps.append(msg)
+                if tj != ti and not self._committed_or_aborted_before(tj, p):
+                    msg = (
+                        f"At position {p} ({op}): last writer of {x} is T{tj} (at {idx_last}); "
+                        f"T{tj} has not committed or aborted before this access by T{ti}. Violation."
+                    )
+                    violations.append((p, op, x, tj, idx_last, ti))
+                    steps.append(msg)
             else:
                 steps.append(f"At position {p} ({op}): first access to {x}. OK (no previous writer).")
 
@@ -265,7 +262,6 @@ class Scheduler:
         Returns:
             tuple: (is_rigorous: bool, explanation: str, steps: list)
         """
-        commit_index, abort_index = self._get_commit_abort_indices()
         ops = self.schedule.operations
         steps = []
         steps.append(
@@ -276,11 +272,6 @@ class Scheduler:
             "  - Reads r_i[x]: last writer of x (if another txn) must have committed or aborted before r_i[x].\n"
             "  - Writes w_i[x]: last accessor (read or write) of x (if another txn) must have committed or aborted before w_i[x]."
         )
-
-        def committed_or_aborted_before(tid, p):
-            cj = commit_index.get(tid)
-            aj = abort_index.get(tid)
-            return (cj is not None and cj < p) or (aj is not None and aj < p)
 
         violations = []
         last_write = {}   # data_item -> (position, tid)
@@ -298,7 +289,7 @@ class Scheduler:
             if op.is_read():
                 if x in last_write:
                     pos_last, tj = last_write[x]
-                    if tj != ti and not committed_or_aborted_before(tj, p):
+                    if tj != ti and not self._committed_or_aborted_before(tj, p):
                         msg = (
                             f"At position {p} ({op}): last write on {x} by T{tj} at position {pos_last} has not "
                             f"committed or aborted before this read. Violation."
@@ -312,7 +303,7 @@ class Scheduler:
                 # Write (or INC/DEC)
                 if x in last_access:
                     pos_last, tj = last_access[x]
-                    if tj != ti and not committed_or_aborted_before(tj, p):
+                    if tj != ti and not self._committed_or_aborted_before(tj, p):
                         kind = "write" if (x in last_write and last_write[x][0] == pos_last) else "read"
                         msg = (
                             f"At position {p} ({op}): previous {kind} on {x} by T{tj} at position {pos_last} has not "
