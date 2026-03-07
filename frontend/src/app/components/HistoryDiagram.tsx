@@ -167,7 +167,7 @@ export function HistoryDiagram({ operations, numTransactions }: HistoryDiagramPr
   const canvasHeight = Math.max(300, 40 + numTransactions * 60 + 40);
 
   return (
-    <div className="w-full border-2 rounded-lg bg-gradient-to-br from-purple-50 to-violet-50 border-purple-200 overflow-auto shadow-inner">
+    <div className="w-full border-2 rounded-lg bg-gradient-to-br from-brand-a-50 to-brand-b-50 border-brand-a-200 overflow-auto shadow-inner">
       <canvas
         ref={canvasRef}
         width={Math.max(800, operations.length * 70 + 120)}

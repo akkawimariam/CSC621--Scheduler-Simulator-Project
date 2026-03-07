@@ -8,8 +8,8 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #030213;
-  --primary-foreground: oklch(1 0 0);
+  --primary: #0f172a;
+  --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.95 0.0058 264.53);
   --secondary-foreground: #030213;
   --muted: #ececf0;
@@ -33,12 +33,61 @@
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
+  --sidebar-primary: #0f172a;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Semantic brand palette — Navy / dark blue (light bg) */
+  /* brand-a: navy | brand-b: royal blue | brand-c: slate-blue */
+  --brand-a-50: #eff6ff;
+  --brand-a-100: #dbeafe;
+  --brand-a-200: #bfdbfe;
+  --brand-a-300: #93c5fd;
+  --brand-a-400: #60a5fa;
+  --brand-a-500: #3b82f6;
+  --brand-a-600: #2563eb;
+  --brand-a-700: #1d4ed8;
+  --brand-a-800: #1e40af;
+  --brand-a-900: #1e3a8a;
+  --brand-b-50: #eff6ff;
+  --brand-b-100: #dbeafe;
+  --brand-b-200: #bfdbfe;
+  --brand-b-300: #93c5fd;
+  --brand-b-400: #60a5fa;
+  --brand-b-500: #3b82f6;
+  --brand-b-600: #2563eb;
+  --brand-b-700: #1d4ed8;
+  --brand-b-800: #1e40af;
+  --brand-b-900: #172554;
+  --brand-c-50: #f8fafc;
+  --brand-c-100: #f1f5f9;
+  --brand-c-200: #e2e8f0;
+  --brand-c-300: #cbd5e1;
+  --brand-c-400: #94a3b8;
+  --brand-c-500: #64748b;
+  --brand-c-600: #475569;
+  --brand-c-700: #334155;
+  --brand-c-800: #1e293b;
+  --brand-c-900: #0f172a;
+  /* Neutral (text, borders) */
+  --neutral-50: #f8fafc;
+  --neutral-200: #e2e8f0;
+  --neutral-300: #cbd5e1;
+  --neutral-400: #94a3b8;
+  --neutral-500: #64748b;
+  --neutral-600: #475569;
+  --neutral-700: #334155;
+  --neutral-800: #1e293b;
+  /* Semantic status */
+  --success: #059669;
+  --error-50: #fef2f2;
+  --error-200: #fecaca;
+  --error-600: #dc2626;
+  --error-700: #b91c1c;
+  --error-800: #991b1b;
 }
 
 .dark {
@@ -117,6 +166,52 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Semantic brand & neutral (use these in components; change values above to rebrand) */
+  --color-brand-a-50: var(--brand-a-50);
+  --color-brand-a-100: var(--brand-a-100);
+  --color-brand-a-200: var(--brand-a-200);
+  --color-brand-a-300: var(--brand-a-300);
+  --color-brand-a-400: var(--brand-a-400);
+  --color-brand-a-500: var(--brand-a-500);
+  --color-brand-a-600: var(--brand-a-600);
+  --color-brand-a-700: var(--brand-a-700);
+  --color-brand-a-800: var(--brand-a-800);
+  --color-brand-a-900: var(--brand-a-900);
+  --color-brand-b-50: var(--brand-b-50);
+  --color-brand-b-100: var(--brand-b-100);
+  --color-brand-b-200: var(--brand-b-200);
+  --color-brand-b-300: var(--brand-b-300);
+  --color-brand-b-400: var(--brand-b-400);
+  --color-brand-b-500: var(--brand-b-500);
+  --color-brand-b-600: var(--brand-b-600);
+  --color-brand-b-700: var(--brand-b-700);
+  --color-brand-b-800: var(--brand-b-800);
+  --color-brand-b-900: var(--brand-b-900);
+  --color-brand-c-50: var(--brand-c-50);
+  --color-brand-c-100: var(--brand-c-100);
+  --color-brand-c-200: var(--brand-c-200);
+  --color-brand-c-300: var(--brand-c-300);
+  --color-brand-c-400: var(--brand-c-400);
+  --color-brand-c-500: var(--brand-c-500);
+  --color-brand-c-600: var(--brand-c-600);
+  --color-brand-c-700: var(--brand-c-700);
+  --color-brand-c-800: var(--brand-c-800);
+  --color-brand-c-900: var(--brand-c-900);
+  --color-neutral-50: var(--neutral-50);
+  --color-neutral-200: var(--neutral-200);
+  --color-neutral-300: var(--neutral-300);
+  --color-neutral-400: var(--neutral-400);
+  --color-neutral-500: var(--neutral-500);
+  --color-neutral-600: var(--neutral-600);
+  --color-neutral-700: var(--neutral-700);
+  --color-neutral-800: var(--neutral-800);
+  --color-success: var(--success);
+  --color-error-50: var(--error-50);
+  --color-error-200: var(--error-200);
+  --color-error-600: var(--error-600);
+  --color-error-700: var(--error-700);
+  --color-error-800: var(--error-800);
 }
 
 @layer base {

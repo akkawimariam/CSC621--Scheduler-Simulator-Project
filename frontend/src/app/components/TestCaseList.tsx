@@ -38,24 +38,24 @@ export function TestCaseList({ onBack, onRunTestCase, onRunAll, getTestCases }: 
 
   const getCategoryColor = (id: string) => {
     const num = parseInt(id.replace(/\D/g, ''), 10) || 0;
-    if (num % 3 === 0) return 'from-indigo-500 to-purple-500';
-    if (num % 3 === 1) return 'from-purple-500 to-violet-500';
-    return 'from-violet-500 to-indigo-500';
+    if (num % 3 === 0) return 'from-brand-c-500 to-brand-a-500';
+    if (num % 3 === 1) return 'from-brand-a-500 to-brand-b-500';
+    return 'from-brand-b-500 to-brand-c-500';
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-violet-50 to-indigo-50 p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-brand-a-50 via-brand-b-50 to-brand-c-50 p-6 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-12 h-12 text-violet-600 animate-spin" />
-          <p className="text-slate-600">Loading test cases from server...</p>
+          <Loader2 className="w-12 h-12 text-brand-b-600 animate-spin" />
+          <p className="text-neutral-600">Loading test cases from server...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-violet-50 to-indigo-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-brand-a-50 via-brand-b-50 to-brand-c-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
           <Button variant="ghost" onClick={onBack} className="mb-4 hover:bg-white/50">
@@ -64,20 +64,20 @@ export function TestCaseList({ onBack, onRunTestCase, onRunAll, getTestCases }: 
           </Button>
           <div className="flex justify-between items-start gap-4 flex-wrap">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-b-600 to-brand-c-600 flex items-center justify-center shadow-lg">
                 <FlaskConical className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-brand-a-600 via-brand-b-600 to-brand-c-600 bg-clip-text text-transparent">
                   Test Cases
                 </h1>
-                <p className="text-slate-600">{filteredTestCases.length} predefined test cases available</p>
+                <p className="text-neutral-600">{filteredTestCases.length} predefined test cases available</p>
               </div>
             </div>
             <Button
               onClick={() => onRunAll(testCases)}
               size="lg"
-              className="bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-700 hover:via-indigo-700 hover:to-purple-700 shadow-xl"
+              className="bg-gradient-to-r from-brand-b-600 via-brand-c-600 to-brand-a-600 hover:from-brand-b-700 hover:via-brand-c-700 hover:to-brand-a-700 shadow-xl"
             >
               <Play className="w-4 h-4 mr-2" />
               Run All {testCases.length} Test Cases
@@ -87,13 +87,13 @@ export function TestCaseList({ onBack, onRunTestCase, onRunAll, getTestCases }: 
 
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400" />
             <Input
               type="text"
               placeholder="Search test cases..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12 border-2 focus:border-violet-400 bg-white shadow-md"
+              className="pl-10 h-12 border-2 focus:border-brand-b-400 bg-white shadow-md"
             />
           </div>
         </div>
@@ -105,12 +105,12 @@ export function TestCaseList({ onBack, onRunTestCase, onRunAll, getTestCases }: 
                 key={testCase.id}
                 className={`cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 ${
                   selectedCase === testCase.id
-                    ? 'ring-4 ring-violet-400 border-violet-300 shadow-2xl'
-                    : 'border-2 hover:border-violet-300'
+                    ? 'ring-4 ring-brand-b-400 border-brand-b-300 shadow-2xl'
+                    : 'border-2 hover:border-brand-b-300'
                 }`}
                 onClick={() => setSelectedCase(testCase.id)}
               >
-                <CardHeader className="bg-gradient-to-r from-slate-50 to-violet-50">
+                <CardHeader className="bg-gradient-to-r from-neutral-50 to-brand-b-50">
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
@@ -121,13 +121,13 @@ export function TestCaseList({ onBack, onRunTestCase, onRunAll, getTestCases }: 
                             {testCase.id.replace('case-', '')}
                           </span>
                         </div>
-                        <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                        <Badge variant="secondary" className="bg-brand-a-100 text-brand-a-700">
                           {testCase.numTransactions} TX
                         </Badge>
                       </div>
-                      <CardTitle className="text-lg font-bold text-slate-800">{testCase.name}</CardTitle>
+                      <CardTitle className="text-lg font-bold text-neutral-800">{testCase.name}</CardTitle>
                       {testCase.description && (
-                        <CardDescription className="mt-2 text-slate-600">{testCase.description}</CardDescription>
+                        <CardDescription className="mt-2 text-neutral-600">{testCase.description}</CardDescription>
                       )}
                     </div>
                     <Button
@@ -136,7 +136,7 @@ export function TestCaseList({ onBack, onRunTestCase, onRunAll, getTestCases }: 
                         e.stopPropagation();
                         onRunTestCase(testCase);
                       }}
-                      className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-md"
+                      className="bg-gradient-to-r from-brand-b-600 to-brand-c-600 hover:from-brand-b-700 hover:to-brand-c-700 shadow-md"
                     >
                       <PlayCircle className="w-4 h-4 mr-2" />
                       Run
@@ -145,9 +145,9 @@ export function TestCaseList({ onBack, onRunTestCase, onRunAll, getTestCases }: 
                 </CardHeader>
                 <CardContent className="pt-4">
                   <div className="space-y-3">
-                    <div className="bg-gradient-to-r from-slate-50 to-purple-50 p-4 rounded-lg border-2 border-slate-200 shadow-sm">
-                      <p className="text-xs font-semibold text-slate-600 mb-2">Schedule:</p>
-                      <p className="font-mono text-sm text-slate-800 break-all leading-relaxed">{testCase.schedule}</p>
+                    <div className="bg-gradient-to-r from-neutral-50 to-brand-a-50 p-4 rounded-lg border-2 border-neutral-200 shadow-sm">
+                      <p className="text-xs font-semibold text-neutral-600 mb-2">Schedule:</p>
+                      <p className="font-mono text-sm text-neutral-800 break-all leading-relaxed">{testCase.schedule}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -158,8 +158,8 @@ export function TestCaseList({ onBack, onRunTestCase, onRunAll, getTestCases }: 
 
         {filteredTestCases.length === 0 && (
           <div className="text-center py-12">
-            <Search className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <p className="text-lg text-slate-600">No test cases found matching "{searchQuery}"</p>
+            <Search className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
+            <p className="text-lg text-neutral-600">No test cases found matching "{searchQuery}"</p>
           </div>
         )}
       </div>
