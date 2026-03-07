@@ -82,7 +82,7 @@ class Scheduler:
         """
         pg = self.get_precedence_graph()
         steps = []
-        steps.append("Build precedence graph from schedule (nodes = transactions, edge Ti→Tj if some op of Ti precedes and conflicts with an op of Tj).")
+        steps.append("Build precedence graph from schedule (nodes = transactions, edge Ti→Tj if some op of Ti precedes and conflicts with an op of Tj). Serialization theorem: the history is conflict-serializable iff this graph is acyclic (formally, the book defines the serialization graph over committed transactions only).")
         # In is_conflict_serializable, for building steps:
         edge_str = "; ".join(f"T{u}→T{v}" for (u, v) in sorted(pg.edges)) if pg.edges else "none"
         steps.append(f"Edges (conflict order): {edge_str}.")
@@ -155,13 +155,13 @@ class Scheduler:
         steps = []
         if not read_from:
             steps.append("Read-from pairs: none.")
-            steps.append("Rule: For each read-from (Ti, Tj, x, p), we need cj < p (writer committed before the read).")
+            steps.append("Rule: For each read-from (Ti, Tj, x, p), we need cj < p (writer committed before the read; no dirty read).")
             steps.append("No pairs to check.")
             steps.append("Conclusion: Schedule avoids cascading aborts.")
             return True, "No read-from dependency; ACA holds trivially.", steps
         rf_desc = "; ".join(f"T{ti} reads {x} from T{tj} at index {p}" for (ti, tj, x, p) in read_from)
         steps.append(f"Read-from pairs: {rf_desc}.")
-        steps.append("Rule: For each read-from (Ti, Tj, x, p), we need cj < p (writer committed before the read).")
+        steps.append("Rule: For each read-from (Ti, Tj, x, p), we need cj < p (writer committed before the read; no dirty read).")
         violations = []
         for (ti, tj, x, p_ri) in read_from:
             cj_idx = commit_index.get(tj)
@@ -202,7 +202,7 @@ class Scheduler:
         commit_index, abort_index = self._get_commit_abort_indices()
         ops = self.schedule.operations
         steps = []
-        steps.append("Strict (ST): Whenever wj[x] < oi[x] for i != j, transaction Tj must have committed or aborted before oi[x].")
+        steps.append("Strict (ST): Whenever wj[x] < oi[x] for i != j, either aj < oi[x] or cj < oi[x] (i.e. no read or write on x until the transaction that previously wrote x has terminated by committing or aborting).")
         steps.append("Rule: For each read/write on x at position p by Ti, if the last writer of x is a different transaction Tj, then Tj must have committed or aborted before p.")
 
         last_write = {}  # data_item -> (position, tid) for the last write on x
@@ -257,18 +257,10 @@ class Scheduler:
 
     def is_rigorous(self):
         """
-        Check if the schedule is rigorous.
+        Check if the schedule is rigorous. O(n) single pass.
         From the notes (Chapter 1):
-        - Strict executions:
-          1) Delay Read(x) until all transactions that previously wrote x commit/abort.
-          2) Delay Write(x) until all transactions that previously wrote x commit/abort.
-        - Rigorous executions = Strict PLUS:
-          3) Delay Write(x) until all transactions that previously *read* x commit/abort.
-
-        So rigorously:
-        - Reads obey the same rule as Strict (only previous WRITERS matter).
-        - Writes must wait for *both* previous readers and previous writers of x (from
-          other transactions) to commit/abort.
+        - Reads: like Strict — last writer of x must have committed or aborted before this read.
+        - Writes: last accessor (read or write) of x must have committed or aborted before this write.
 
         Returns:
             tuple: (is_rigorous: bool, explanation: str, steps: list)
@@ -277,15 +269,22 @@ class Scheduler:
         ops = self.schedule.operations
         steps = []
         steps.append(
-            "Rigorous: Strict plus, for every write w_i[x], all transactions that previously read x must have committed or aborted."
+            "Rigorous: Strict plus, for every write w_i[x], all transactions that previously read or wrote x must have committed or aborted (in particular, delay Write(x) until all trans that previously Read(x) commit/abort)."
         )
         steps.append(
-            "Rules:\n"
-            "  - Reads r_i[x]: like Strict, all previous writes w_j[x] (j != i) must have committed or aborted before r_i[x].\n"
-            "  - Writes w_i[x]: all previous reads r_j[x] and writes w_j[x] on x by j != i must have committed or aborted before w_i[x]."
+            "Rules (single pass):\n"
+            "  - Reads r_i[x]: last writer of x (if another txn) must have committed or aborted before r_i[x].\n"
+            "  - Writes w_i[x]: last accessor (read or write) of x (if another txn) must have committed or aborted before w_i[x]."
         )
 
+        def committed_or_aborted_before(tid, p):
+            cj = commit_index.get(tid)
+            aj = abort_index.get(tid)
+            return (cj is not None and cj < p) or (aj is not None and aj < p)
+
         violations = []
+        last_write = {}   # data_item -> (position, tid)
+        last_access = {}  # data_item -> (position, tid)
 
         for p, op in enumerate(ops):
             if op.data_item is None:
@@ -293,59 +292,36 @@ class Scheduler:
             x = op.data_item
             ti = op.transaction_id
 
-            # Only reads and writes (including inc/dec) participate.
             if not (op.is_read() or op.is_write()):
                 continue
 
             if op.is_read():
-                # Strict rule: check all previous writes w_j[x] from other transactions.
-                for q in range(p):
-                    prev = ops[q]
-                    if prev.data_item != x:
-                        continue
-                    if not prev.is_write():
-                        continue
-                    tj = prev.transaction_id
-                    if tj == ti:
-                        continue
-                    cj = commit_index.get(tj)
-                    aj = abort_index.get(tj)
-                    if cj is not None and cj < p:
-                        continue
-                    if aj is not None and aj < p:
-                        continue
-                    msg = (
-                        f"At position {p} ({op}): previous write on {x} by T{tj} at position {q} has not "
-                        f"committed or aborted before this read. Violation."
-                    )
-                    violations.append((p, op, x, tj, q, ti))
-                    steps.append(msg)
-                    break
+                if x in last_write:
+                    pos_last, tj = last_write[x]
+                    if tj != ti and not committed_or_aborted_before(tj, p):
+                        msg = (
+                            f"At position {p} ({op}): last write on {x} by T{tj} at position {pos_last} has not "
+                            f"committed or aborted before this read. Violation."
+                        )
+                        violations.append((p, op, x, tj, pos_last, ti))
+                        steps.append(msg)
+                else:
+                    steps.append(f"At position {p} ({op}): first access to {x}. OK (no previous writer).")
+                last_access[x] = (p, ti)
             else:
-                # Write (or INC/DEC): must wait for ALL previous reads/writes on x by other transactions.
-                for q in range(p):
-                    prev = ops[q]
-                    if prev.data_item != x:
-                        continue
-                    if not (prev.is_read() or prev.is_write()):
-                        continue
-                    tj = prev.transaction_id
-                    if tj == ti:
-                        continue
-                    cj = commit_index.get(tj)
-                    aj = abort_index.get(tj)
-                    if cj is not None and cj < p:
-                        continue
-                    if aj is not None and aj < p:
-                        continue
-                    kind = "write" if prev.is_write() else "read"
-                    msg = (
-                        f"At position {p} ({op}): previous {kind} on {x} by T{tj} at position {q} has not "
-                        f"committed or aborted before this write. Violation."
-                    )
-                    violations.append((p, op, x, tj, q, ti))
-                    steps.append(msg)
-                    break
+                # Write (or INC/DEC)
+                if x in last_access:
+                    pos_last, tj = last_access[x]
+                    if tj != ti and not committed_or_aborted_before(tj, p):
+                        kind = "write" if (x in last_write and last_write[x][0] == pos_last) else "read"
+                        msg = (
+                            f"At position {p} ({op}): previous {kind} on {x} by T{tj} at position {pos_last} has not "
+                            f"committed or aborted before this write. Violation."
+                        )
+                        violations.append((p, op, x, tj, pos_last, ti))
+                        steps.append(msg)
+                last_write[x] = (p, ti)
+                last_access[x] = (p, ti)
 
         if violations:
             expl = "Not rigorous: " + "; ".join(

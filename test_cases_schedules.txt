@@ -96,7 +96,7 @@ Number of transactions: 2
 Transaction 1: T1: start1 r1[x] w1[y] c1
 Transaction 2: T2: start2 r2[y] w2[x] c2
 History: start1 r1[x] start2 r2[y] w1[y] w2[x] c1 c2
-# Expected: RC=NO, ACA=NO, ST=NO, Rigorous=NO, SR=NO
+# Expected: RC=YES, ACA=YES, ST=YES, Rigorous=YES, SR=NO (no read-from between T1,T2; cycle in precedence graph)
 
 
 # ==========================================================
@@ -171,7 +171,7 @@ Transaction 1: T1: start1 r1[x] w1[y] c1
 Transaction 2: T2: start2 r2[y] w2[z] c2
 Transaction 3: T3: start3 r3[z] w3[x] c3
 Transaction 4: T4: start4 r4[x] r4[y] w4[z] c4
-History: start1 r1[x] start2 r2[y] start3 r3[z] w1[y] r4[x] w2[z] w3[x] r4[y] w4[z] c1 c2 c3 c4
+History: start1 r1[x] start2 r2[y] start3 r3[z] w1[y] start4 r4[x] w2[z] w3[x] r4[y] w4[z] c1 c2 c3 c4
 # Expected: 
 # - Conflicts: T1→T2 (w1[y] before r2[y]? careful: r2[y] happened BEFORE w1[y]! No edge)
 #   Actually: r2[y] at position 2, w1[y] at position 4 → r2 reads old value, so no T1→T2 edge
@@ -196,8 +196,8 @@ History: start1 w1[x] start2 r2[x] w2[y] start3 w3[z] r3[x] start4 r4[z] r1[y] w
 # - Cycle T1→T2→T1 already, so SR=NO regardless of others
 # - T3→T4? w3[z] before r4[z] → T3→T4
 # - T4→T3? r3[x] before w4[x]? r3[x] at pos5, w4[x] at pos8 → T4→T3? No, r3 reads old x
-# - But cycle already exists
-# Expected: RC=?, ACA=?, ST=?, Rigorous=?, SR=NO
+# - T2 reads x from T1, T1 reads y from T2 → need c1<c2 and c2<c1 for RC → impossible
+# Expected: RC=NO, ACA=NO, ST=NO, Rigorous=NO, SR=NO
 
 
 # ==========================================================
@@ -406,3 +406,35 @@ Transaction 2: T2: start2 r2[x] w2[y] c2
 Transaction 3: T3: start3 r3[y] c3
 History: start1 r1[x] w1[x] c1 start2 r2[x] w2[y] c2 start3 r3[y] c3
 # Expected: T1→T2, T2→T3, SR=YES, RC=YES, ACA=YES, ST=YES, Rigorous=YES
+
+# Case 11.7 — RC but NOT ACA (dirty read: r3[x] before c1)
+Number of transactions: 3
+Transaction 1: T1: start1 r1[x] w1[x] c1
+Transaction 2: T2: start2 r2[y] w2[y] c2
+Transaction 3: T3: start3 r3[x] w3[z] c3
+History: start1 r1[x] w1[x] start2 r2[y] w2[y] start3 r3[x] c1 w3[z] c2 c3
+# Expected: T1→T3, SR=YES, RC=YES, ACA=NO, ST=NO, Rigorous=NO
+
+# Case 11.8 — Recoverable but NOT ACA (dirty read: r2[x] before c1)
+Number of transactions: 3
+Transaction 1: T1: start1 w1[x] c1
+Transaction 2: T2: start2 r2[x] w2[y] c2
+Transaction 3: T3: start3 r3[y] c3
+History: start1 w1[x] start2 r2[x] w2[y] start3 r3[y] c1 c2 c3
+# Expected: T1→T2, T2→T3, SR=YES, RC=YES, ACA=NO, ST=NO, Rigorous=NO
+
+# Case 11.9 — Recoverable but NOT ACA
+Number of transactions: 3
+Transaction 1: T1: start1 w1[x] c1
+Transaction 2: T2: start2 r2[x] w2[y] c2
+Transaction 3: T3: start3 r3[y] c3
+History: start1 w1[x] start2 r2[x] start3 r3[y] c1 w2[y] c2 c3
+# Expected: T1→T2, T2→T3, SR=YES, RC=YES, ACA=NO, ST=NO, Rigorous=NO
+
+# Case 11.10 — Serializable but NOT Recoverable
+Number of transactions: 3
+Transaction 1: T1: start1 w1[x] c1
+Transaction 2: T2: start2 r2[x] w2[y] c2
+Transaction 3: T3: start3 r3[y] c3
+History: start1 w1[x] start2 r2[x] w2[y] c2 start3 r3[y] c3 c1
+# Expected: T1→T2, T2→T3, SR=YES, RC=NO, ACA=NO, ST=NO, Rigorous=NO

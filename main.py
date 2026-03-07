@@ -294,6 +294,31 @@ TEST_CASES = [
         "transactions": ["T1: start1 r1[x] w1[x] c1", "T2: start2 r2[x] w2[y] c2", "T3: start3 r3[y] c3"],
         "history": "start1 r1[x] w1[x] c1 start2 r2[x] w2[y] c2 start3 r3[y] c3",
     },
+    # --- 11.7–11.10 Additional correctness-property cases ---
+    {
+        "label": "Case 11.7 — RC but NOT ACA (dirty read: r3[x] before c1)",
+        "num_txns": 3,
+        "transactions": ["T1: start1 r1[x] w1[x] c1", "T2: start2 r2[y] w2[y] c2", "T3: start3 r3[x] w3[z] c3"],
+        "history": "start1 r1[x] w1[x] start2 r2[y] w2[y] start3 r3[x] c1 w3[z] c2 c3",
+    },
+    {
+        "label": "Case 11.8 — Recoverable but NOT ACA (dirty read: r2[x] before c1)",
+        "num_txns": 3,
+        "transactions": ["T1: start1 w1[x] c1", "T2: start2 r2[x] w2[y] c2", "T3: start3 r3[y] c3"],
+        "history": "start1 w1[x] start2 r2[x] w2[y] start3 r3[y] c1 c2 c3",
+    },
+    {
+        "label": "Case 11.9 — Recoverable but NOT ACA",
+        "num_txns": 3,
+        "transactions": ["T1: start1 w1[x] c1", "T2: start2 r2[x] w2[y] c2", "T3: start3 r3[y] c3"],
+        "history": "start1 w1[x] start2 r2[x] start3 r3[y] c1 w2[y] c2 c3",
+    },
+    {
+        "label": "Case 11.10 — Serializable but NOT Recoverable",
+        "num_txns": 3,
+        "transactions": ["T1: start1 w1[x] c1", "T2: start2 r2[x] w2[y] c2", "T3: start3 r3[y] c3"],
+        "history": "start1 w1[x] start2 r2[x] w2[y] c2 start3 r3[y] c3 c1",
+    },
 ]
 
 
@@ -597,6 +622,9 @@ def run_automatic_mode():
             from datetime import datetime
             log_name = "all_test_cases_output_{}.txt".format(datetime.now().strftime("%Y%m%d_%H%M%S"))
             log_path = _output_path(log_name)
+            passed = 0
+            failed = 0
+            failed_cases = []
             with open(log_path, "w", encoding="utf-8") as log_file:
                 tee = Tee(log_file)
                 old_stdout = sys.stdout
@@ -606,10 +634,40 @@ def run_automatic_mode():
                         print("\n" + "#"*60)
                         print(f"Running: {tc['label']}")
                         print("#"*60)
-                        run_test_case(tc, graph_filename="precedence_graph_case_{}".format(i + 1))
+                        try:
+                            run_test_case(tc, graph_filename="precedence_graph_case_{}".format(i + 1))
+                            passed += 1
+                        except Exception as e:
+                            failed += 1
+                            failed_cases.append((i + 1, tc["label"], str(e)))
+                            print("  ERROR: {}".format(e))
+                            import traceback
+                            traceback.print_exc()
                 finally:
                     sys.stdout = old_stdout
-            print("\nFull output saved to: {}".format(log_path))
+            total = len(TEST_CASES)
+            summary_lines = [
+                "",
+                "="*60,
+                "RUN ALL TEST CASES — SUMMARY",
+                "="*60,
+                "  Total:  {}".format(total),
+                "  Passed: {}".format(passed),
+                "  Failed: {}".format(failed),
+            ]
+            if failed_cases:
+                summary_lines.append("")
+                summary_lines.append("  Failed case(s):")
+                for idx, label, err in failed_cases:
+                    summary_lines.append("    #{} {} — {}".format(idx, label, err))
+            summary_lines.append("="*60)
+            summary_lines.append("")
+            summary_text = "\n".join(summary_lines)
+            print(summary_text)
+            print("Full output saved to: {}".format(log_path))
+            with open(log_path, "a", encoding="utf-8") as log_file:
+                log_file.write(summary_text)
+                log_file.write("\nFull output saved to: {}\n".format(log_path))
             continue
         # kind == 'list', payload == list of 1-based indices
         indices = payload
