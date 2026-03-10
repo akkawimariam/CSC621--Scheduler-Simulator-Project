@@ -2,9 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { ArrowLeft, Download, ChevronDown, ChevronUp, TrendingUp, GitBranch, BarChart3, Lock, LockKeyhole } from 'lucide-react';
+import { ArrowLeft, Download, ChevronDown, ChevronUp, TrendingUp, GitBranch, BarChart3, Lock, LockKeyhole, UnlockKeyhole, PlayCircle } from 'lucide-react';
 import type { AnalysisResult } from '../utils/api';
-import { validate2PL, type Validate2PLResult } from '../utils/api';
+import { validate2PL, type Validate2PLResult, type Validate2PLStep } from '../utils/api';
+
+/** Classify 2PL step for styling: lock acquire, lock release, schedule op, violation, or result. */
+function get2PLStepType(step: Validate2PLStep): 'acquire' | 'release' | 'schedule' | 'violation' | 'result' {
+  const e = step.event.trim();
+  const ex = step.explanation.toLowerCase();
+  if (e === '(result)') return 'result';
+  if (/^rl\d+\[/.test(e) || /^wl\d+\[/.test(e)) {
+    return ex.includes('cannot acquire') || ex.includes('does not follow strict 2pl') ? 'violation' : 'acquire';
+  }
+  if (/^ru\d+\[/.test(e) || /^wu\d+\[/.test(e)) return 'release';
+  return 'schedule';
+}
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { PrecedenceGraph } from './PrecedenceGraph';
@@ -366,10 +378,24 @@ ${result.violations.length > 0 ? `\nVIOLATIONS:\n${result.violations.map(v => '-
                     <LockKeyhole className="w-5 h-5" />
                     2PL / Strict 2PL validation
                   </h3>
-                  <p className="text-sm text-brand-c-800 leading-relaxed">
+                  <p className="text-sm text-brand-c-800 leading-relaxed mb-3">
                     Check whether this schedule could have been produced by a Two-Phase Locking (2PL) or Strict 2PL scheduler.
-                    Lock commands: <span className="font-mono font-bold">rl</span> = read lock, <span className="font-mono font-bold">wl</span> = write lock, <span className="font-mono font-bold">ru</span> = release read, <span className="font-mono font-bold">wu</span> = release write.
+                    <span className="block mt-2 font-medium text-brand-c-900">Legend:</span>
                   </p>
+                  <div className="flex flex-wrap gap-3 text-xs">
+                    <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-100 text-emerald-800 px-2 py-1 font-mono font-semibold border border-emerald-300">
+                      <Lock className="w-3.5 h-3.5" /> rl / wl
+                    </span>
+                    <span className="text-neutral-600">acquire read/write lock</span>
+                    <span className="inline-flex items-center gap-1.5 rounded-md bg-sky-100 text-sky-800 px-2 py-1 font-mono font-semibold border border-sky-300">
+                      <UnlockKeyhole className="w-3.5 h-3.5" /> ru / wu
+                    </span>
+                    <span className="text-neutral-600">release lock</span>
+                    <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-100 text-amber-800 px-2 py-1 font-mono font-semibold border border-amber-300">
+                      <PlayCircle className="w-3.5 h-3.5" /> r1[x], c1, …
+                    </span>
+                    <span className="text-neutral-600">schedule operation</span>
+                  </div>
                 </div>
                 {validate2PLLoading && (
                   <p className="text-sm text-neutral-600">Loading validation…</p>
@@ -382,7 +408,7 @@ ${result.violations.length > 0 ? `\nVIOLATIONS:\n${result.violations.map(v => '-
                 )}
                 {!validate2PLLoading && !validate2PLError && validate2PLData && (
                   <>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-3 items-center">
                       <Badge className={validate2PLData.followsStrict2PL ? 'bg-success' : 'bg-error-600'}>
                         Strict 2PL: {validate2PLData.followsStrict2PL ? 'YES' : 'NO'}
                       </Badge>
@@ -390,17 +416,43 @@ ${result.violations.length > 0 ? `\nVIOLATIONS:\n${result.violations.map(v => '-
                         2PL: {validate2PLData.follows2PL ? 'YES' : 'NO'}
                       </Badge>
                     </div>
-                    <div className="space-y-1">
-                      <h4 className="font-semibold text-neutral-800">Step-by-step (lock commands rl, wl, ru, wu)</h4>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-neutral-800">Step-by-step</h4>
                       <div className="bg-gradient-to-r from-neutral-50 to-brand-c-50 p-4 rounded-lg border-2 border-neutral-200 shadow-inner max-h-[420px] overflow-y-auto">
-                        <div className="space-y-2">
-                          {validate2PLData.steps.map((step, index) => (
-                            <div key={index} className="flex gap-3 items-start text-sm">
-                              <span className="font-mono font-bold text-brand-c-700 shrink-0 min-w-[100px]">{step.event}</span>
-                              <span className="text-neutral-700">{step.explanation}</span>
-                            </div>
-                          ))}
-                        </div>
+                        <ol className="space-y-2 list-none pl-0">
+                          {validate2PLData.steps.map((step, index) => {
+                            const stepType = get2PLStepType(step);
+                            const isViolation = stepType === 'violation';
+                            const isResult = stepType === 'result';
+                            const borderClass = isViolation
+                              ? 'border-l-4 border-error-500 bg-error-50'
+                              : stepType === 'acquire'
+                                ? 'border-l-4 border-emerald-500 bg-emerald-50/50'
+                                : stepType === 'release'
+                                  ? 'border-l-4 border-sky-500 bg-sky-50/50'
+                                  : stepType === 'schedule'
+                                    ? 'border-l-4 border-amber-400 bg-amber-50/30'
+                                    : 'border-l-4 border-brand-c-500 bg-brand-c-50/50';
+                            return (
+                              <li key={index} className={`flex gap-3 items-start text-sm rounded-r px-3 py-2 ${borderClass}`}>
+                                <span className="shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-white/80 text-neutral-600 font-semibold text-xs shadow-sm">
+                                  {index + 1}
+                                </span>
+                                {stepType === 'acquire' && <Lock className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />}
+                                {stepType === 'release' && <UnlockKeyhole className="w-4 h-4 shrink-0 text-sky-600 mt-0.5" />}
+                                {stepType === 'schedule' && <PlayCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />}
+                                {isViolation && <AlertCircle className="w-4 h-4 shrink-0 text-error-600 mt-0.5" />}
+                                <div className="flex-1 min-w-0">
+                                  <span className="font-mono font-bold text-neutral-800">{step.event}</span>
+                                  {isViolation && (
+                                    <span className="ml-2 inline-flex items-center rounded bg-error-200 text-error-800 text-xs font-semibold px-1.5 py-0.5">Violation</span>
+                                  )}
+                                  <p className="text-neutral-700 mt-0.5">{step.explanation}</p>
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ol>
                       </div>
                     </div>
                   </>

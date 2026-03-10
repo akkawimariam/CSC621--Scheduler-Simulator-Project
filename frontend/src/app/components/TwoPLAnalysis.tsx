@@ -11,6 +11,37 @@ interface TwoPLAnalysisProps {
   onBack: () => void;
 }
 
+/** Classify event for pill color: lock acquire (rl/wl), release (ru/wu), or schedule op. */
+function getEventPillType(event: string): 'acquire' | 'release' | 'schedule' {
+  const e = event.trim();
+  if (/^rl\d+\[/.test(e) || /^wl\d+\[/.test(e)) return 'acquire';
+  if (/^ru\d+\[/.test(e) || /^wu\d+\[/.test(e)) return 'release';
+  return 'schedule';
+}
+
+function EventPills({ events }: { events: string[] }) {
+  if (!events.length) return <p className="text-neutral-500">(no operations)</p>;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {events.map((ev, i) => {
+        const t = getEventPillType(ev);
+        const base = 'rounded-lg px-2.5 py-1 font-mono text-sm font-semibold border shadow-sm';
+        const style =
+          t === 'acquire'
+            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+            : t === 'release'
+              ? 'bg-sky-100 text-sky-800 border-sky-300'
+              : 'bg-amber-50 text-amber-900 border-amber-300';
+        return (
+          <span key={i} className={`${base} ${style}`}>
+            {ev}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 function LockTimeline({ lockTable }: { lockTable: Strict2PLLockEntry[] }) {
   const transactionColors = [
     'bg-brand-a-500',
@@ -147,7 +178,7 @@ export function TwoPLAnalysis({ schedule, onBack }: TwoPLAnalysisProps) {
           </div>
         </div>
 
-        {/* Info: same as main.py */}
+        {/* Info: Strict 2PL semantics (backend) */}
         <Card className="mb-6 bg-gradient-to-r from-brand-a-50 via-brand-b-50 to-brand-c-50 border-2 border-brand-a-200">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -155,11 +186,13 @@ export function TwoPLAnalysis({ schedule, onBack }: TwoPLAnalysisProps) {
               About Strict 2PL (derived from your schedule)
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-sm">
+          <CardContent className="text-sm space-y-2">
             <p className="text-neutral-700 leading-relaxed">
-              For each operation on a data item: acquire read or write lock before the access. All locks held by a
-              transaction are released only at commit or abort (Strict 2PL). This view shows one possible
-              strict-2PL-compatible lock/unlock sequence for your schedule—same as in the command-line tool.
+              <strong>Strict 2PL:</strong> Every data operation is preceded by acquiring the required lock (read or write).
+              All locks are released <strong>only at commit or abort</strong>—no early release.
+            </p>
+            <p className="text-neutral-600 leading-relaxed">
+              This view shows one possible strict-2PL-compatible lock/unlock sequence for your schedule (same as the command-line tool).
             </p>
           </CardContent>
         </Card>
@@ -190,10 +223,13 @@ export function TwoPLAnalysis({ schedule, onBack }: TwoPLAnalysisProps) {
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
               <div className="bg-neutral-50 border-2 border-neutral-200 rounded-lg p-4">
-                <p className="text-xs font-semibold text-neutral-600 mb-2">Lock and operation sequence (rl = read lock, wl = write lock, ru/wu = release):</p>
-                <p className="font-mono text-sm text-neutral-800 break-all leading-relaxed">
-                  {data.events.length ? data.events.join('  ') : '(no operations)'}
-                </p>
+                <p className="text-xs font-semibold text-neutral-600 mb-3">Lock and operation sequence:</p>
+                <div className="flex flex-wrap gap-2 mb-2 text-xs text-neutral-500">
+                  <span className="rounded bg-emerald-100 text-emerald-700 px-1.5 py-0.5 font-mono">rl/wl</span> acquire
+                  <span className="rounded bg-sky-100 text-sky-700 px-1.5 py-0.5 font-mono">ru/wu</span> release
+                  <span className="rounded bg-amber-100 text-amber-700 px-1.5 py-0.5 font-mono">r1[x], c1…</span> schedule
+                </div>
+                <EventPills events={data.events} />
               </div>
 
               <Tabs defaultValue="timeline" className="w-full">

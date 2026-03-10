@@ -1,0 +1,11 @@
+{
+  "name": "transaction-scheduler-simulator",
+  "private": true,
+  "description": "Transaction Scheduling and Serializability Analysis - run full stack (API + frontend) with one command",
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"python api.py\" \"cd frontend && npm run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

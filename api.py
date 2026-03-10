@@ -156,8 +156,8 @@ def analyze():
 
 @app.route("/api/test-cases", methods=["GET"])
 def get_test_cases():
-    """Return list of test cases from backend (main.TEST_CASES)."""
-    from main import TEST_CASES
+    """Return list of test cases from backend (test_cases.TEST_CASES)."""
+    from test_cases import TEST_CASES
 
     log.info("GET /api/test-cases | returning %d cases", len(TEST_CASES))
     # Frontend expects: id, name, description?, numTransactions, schedule (history), transactions?
@@ -328,7 +328,7 @@ def validate_2pl():
 def strict2pl_history():
     """
     POST body: { "schedule": "start1 r1[x] w1[x] c1 ..." }
-    Returns Strict 2PL lock/unlock history derived from the schedule (same as main.py).
+    Returns Strict 2PL lock/unlock history derived from the schedule.
     """
     try:
         data = request.get_json() or {}

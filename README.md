@@ -7,14 +7,15 @@ A Python-based transaction scheduler simulator that analyzes database schedules 
 ```
 .
 ├── operation.py          # Operation class (START, READ, WRITE, INCREMENT, DECREMENT, COMMIT, ABORT)
-├── transaction.py       # Transaction class (collection of operations)
+├── transaction.py        # Transaction class (collection of operations)
 ├── schedule.py           # Schedule class (history of operations)
 ├── scheduler.py          # Scheduler class (analyzer; uses precedence graph for SR)
 ├── precedence_graph.py   # Precedence graph from schedule (conflict edges, cycle check, DOT/PNG)
 ├── parser.py             # Parser for user input (transaction sequences and schedules)
-├── main.py               # Main entry point (CLI)
+├── test_cases.py         # Built-in test cases (used by API for Run Test Cases)
 ├── api.py                # Flask API for the web UI (analyze, test-cases, generate); logs all requests
 ├── requirements-api.txt  # Flask + flask-cors for the API
+├── package.json          # Root script: npm run dev starts both API and frontend (concurrently)
 ├── frontend/             # React (Vite) web UI; calls the API for analysis
 └── README.md             # This file
 ```
@@ -56,7 +57,7 @@ Builds the serialization/precedence graph from the schedule history:
 - `to_dot()` — DOT source string (for external tools)
 - `render(filepath, format)` — save as PNG/SVG using NetworkX + matplotlib (no Graphviz required), or as `.dot` if format is `"dot"`
 
-After each run, the program saves the precedence graph (e.g. `precedence_graph.png`). Install `networkx` and `matplotlib` (see `requirements.txt`) for image output.
+The web UI receives graph data from the API and renders visualizations in the browser.
 
 ### Parser
 Parses user input:
@@ -118,38 +119,44 @@ The system analyzes schedules in two stages: (1) **parsing** the schedule string
 
 ## Usage
 
-### Option 1: Command-line (Python only)
+The application is **web UI only**. You can run the full stack (API + frontend) with **one command** from the project root, or start them in two terminals.
 
-Run the main program:
+### Option A: One command (recommended)
+
+From the **project root** (where `api.py` and this `package.json` live):
+
 ```bash
-python main.py
+# First time only: install Python API deps + root script runner + frontend deps
+pip install -r requirements-api.txt
+npm install
+cd frontend && npm install && cd ..
+
+# Start both API and frontend (one terminal)
+npm run dev
 ```
 
-### Option 2: Web UI (React + Python API)
+The API runs at `http://localhost:5000` and the React app at `http://localhost:5173`. Open the frontend URL in your browser.
 
-The frontend is a **React** app (Vite). To run the full stack:
+### Option B: Two terminals
 
-1. **Backend (Python API)**  
-   In one terminal, from the project root:
+1. **Backend** — from project root:
    ```bash
    pip install -r requirements-api.txt
    python api.py
    ```
-   The API runs at `http://localhost:5000` and logs each request.
-
-2. **Frontend (React)**  
-   In a second terminal, from the project root:
+2. **Frontend** — from project root:
    ```bash
    cd frontend
    npm install
    npm run dev
    ```
-   This starts the Vite dev server (React). Open the URL shown (e.g. `http://localhost:5173`). The UI talks to the API at `http://localhost:5000` (via Vite proxy if configured).
+   Open the URL shown (e.g. `http://localhost:5173`).
 
-3. **Using the UI**  
-   Use **Manual Input**, **Run Test Cases**, or **Generate Schedule**. For generation you can choose mode: **Random**, **2PL**, or **Strict 2PL**. Schedules must include `start1`, `start2`, etc.; see Input Format below.
+### Using the UI
 
-### Input Format
+Use **Manual Input**, **Run Test Cases**, or **Generate Schedule**. For generation you can choose mode: **Random**, **2PL**, or **Strict 2PL**. Schedules must include `start1`, `start2`, etc.; see Input Format below.
+
+### Input format (for Manual Input and test cases)
 
 Each transaction must be **well-formed**: it must **begin with START(Ti)** and **end with COMMIT(Ti) or ABORT(Ti)**. The system will report an error if any transaction is missing START or COMMIT/ABORT.
 
@@ -172,26 +179,7 @@ Each transaction must be **well-formed**: it must **begin with START(Ti)** and *
 - **Missing COMMIT/ABORT:** e.g. "Transaction T2 must end with COMMIT or ABORT (e.g. c2 or a2). Last operation is w2[y]."
 - These apply to both transaction strings (manual input) and the history string.
 
-### Example Session
-
-```
-Enter the number of transactions: 2
-
-Enter 2 transaction sequence(s) in format: T1: start1 r1[x] w1[x] c1
-Transaction 1: T1: start1 r1[x] w1[x] c1
-  Parsed: T1: start1 r1[x] w1[x] c1
-Transaction 2: T2: start2 r2[y] w2[y] c2
-  Parsed: T2: start2 r2[y] w2[y] c2
-
-Enter the history (schedule) in one line:
-Example: start1 r1[x] w1[x] start2 r2[y] w2[y] c1 c2
-History: start1 r1[x] w1[x] start2 r2[y] w2[y] c1 c2
-  Parsed schedule: start1 r1[x] w1[x] start2 r2[y] w2[y] c1 c2
-
-[Analysis results will be displayed]
-```
-
-### Supported Operations
+### Supported operations
 
 - `start1` - START operation for transaction 1 (required as first op of each transaction)
 - `r1[x]` - READ operation by transaction 1 on data item x
@@ -201,10 +189,6 @@ History: start1 r1[x] w1[x] start2 r2[y] w2[y] c1 c2
 - `c1` - COMMIT operation for transaction 1 (required as last op if transaction commits)
 - `a1` - ABORT operation for transaction 1 (required as last op if transaction aborts)
 
-## Exiting
-
-Type `quit`, `exit`, or `q` at any prompt to terminate the program.
-
 ## Implementation Status
 
 - ✅ Basic structure and classes
@@ -213,7 +197,7 @@ Type `quit`, `exit`, or `q` at any prompt to terminate the program.
 - ✅ Conflict-serializability analysis (precedence graph, cycle check, serial order, step-by-step)
 - ✅ Recoverability (RC), ACA, Strict (ST), Rigorous with step-by-step explanations
 - ✅ 2PL and Strict 2PL validation with step-by-step lock explanation (schedule-operation–aware)
-- ✅ Schedule generation (Random, 2PL, Strict 2PL) via API and CLI
+- ✅ Schedule generation (Random, 2PL, Strict 2PL) via API
 - ✅ Precedence graph and history diagram generation and visualization
 - ✅ Web UI (React + Vite) and Flask API
 
@@ -232,7 +216,8 @@ Each team member can implement one of the analysis methods:
 
 | File | Role |
 |------|------|
-| **main.py** | Entry point. Shows the menu (Manual / Automatic), reads input or loads a test case, builds the schedule, runs the analyzer, prints results and step-by-step explanations, saves graphs. When "Run ALL test cases" is selected, full terminal output is also saved to a timestamped file in the output folder. |
+| **api.py** | Flask HTTP API. Entry point for the app: run `python api.py` to start the backend. Serves analyze, test-cases, generate, validate-2pl, strict2pl-history. Used by the React frontend only. |
+| **test_cases.py** | Built-in list of test cases (label, num_txns, transactions, history). Used by the API to serve test cases to the UI. |
 | **parser.py** | Converts text into `Operation` objects and builds `Transaction` / `Schedule` objects. Enforces well-formedness (START, COMMIT/ABORT). No analysis logic. |
 | **operation.py** | Defines one operation: type (start, r, w, inc, dec, c, a), transaction ID, optional data item. Provides `conflicts_with()` for conflict detection. |
 | **transaction.py** | A single transaction: list of `Operation`s and helpers (e.g. `is_committed()`, `is_aborted()`). |
@@ -263,35 +248,22 @@ Each team member can implement one of the analysis methods:
    Built from a `Schedule`. Represents the history at operation level (chains per transaction, conflict edges). Used only for printing and drawing the history diagram.
 
 7. **Scheduler** (scheduler.py)  
-   Holds a `Schedule`. Uses `PrecedenceGraph` for conflict-serializability. Implements read-from and commit/abort positions for RC and ACA. Calls `get_precedence_graph()` when graphs need to be printed or saved. Does not use `HistoryDiagram`; main builds that separately.
+   Holds a `Schedule`. Uses `PrecedenceGraph` for conflict-serializability. Implements read-from and commit/abort positions for RC and ACA. Calls `get_precedence_graph()` when the API needs graph data for the UI. The API builds `HistoryDiagram` when the frontend requests history diagram data.
 
 ---
 
-## How main runs
+## How the application runs
 
-1. **Start**  
-   `python main.py` → `main()` runs. It prints a banner and enters a loop.
+1. **Start the backend**  
+   Run `python api.py` from the project root. The Flask API listens at `http://localhost:5000`.
 
-2. **Choose mode**  
-   User picks:
-   - **1 – Manual:** `run_manual_mode()` runs once (or repeats until user types quit).
-   - **2 – Automatic:** `run_automatic_mode()` runs (menu of test cases; user picks one number, or 0 for all, or q to go back).
-   - **q:** Exit the loop and the program ends.
+2. **Start the frontend**  
+   Run `npm run dev` from the `frontend/` directory. The Vite dev server serves the React UI (e.g. `http://localhost:5173`).
 
-3. **Get a schedule**
-   - **Manual:** Ask for number of transactions, then each transaction line (e.g. `T1: start1 r1[x] w1[x] c1`), then one history line. Parse the **history** with `Parser.parse_schedule(history_input)` → get a `Schedule` object. Each transaction must begin with START and end with COMMIT or ABORT.
-   - **Automatic:** Take the chosen test case; `Parser.parse_schedule(tc["history"])` → same `Schedule` object.
+3. **User flows in the UI**  
+   - **Manual Input:** User enters number of transactions, each transaction string, and the schedule (history). The frontend sends the schedule to the API; the API parses it, runs the scheduler and locking modules, and returns analysis results and graph data.  
+   - **Run Test Cases:** The frontend fetches the test case list from `/api/test-cases` (backed by `test_cases.TEST_CASES`). User picks a case; the frontend sends the schedule to `/api/analyze` and displays results and visualizations.  
+   - **Generate Schedule:** The frontend calls `/api/generate` with a mode (random, 2pl, strict2pl). The API uses `ScheduleGenerator` or `generate_schedule_with_protocol` and returns the generated schedule, which the user can then analyze.
 
-4. **Analyze**  
-   - Create `Scheduler(schedule)`.
-   - Call `scheduler.analyze()` → returns a dict with SR, RC, ACA, Strict, Rigorous (each with result, explanation, and step-by-step steps).
-   - `print_analysis_results(results)` prints that dict and the step-by-step explanations.
-
-5. **Diagrams**  
-   - **Precedence graph:** `scheduler.get_precedence_graph()` → `PrecedenceGraph` instance. Call `print_graph()` (terminal) and `render(...)` (saves PNG in the output folder).
-   - **History diagram:** `HistoryDiagram(schedule)` → call `print_ascii()` (terminal) and `render(...)` (saves PNG in the output folder).
-
-6. **Loop or quit**  
-   - Manual: after one run, ask again for transactions/history until user types quit, then back to step 2.  
-   - Automatic: after one run (or all), show the test menu again until user types q, then back to step 2.  
-   - If user chose q at the mode prompt, the loop exits and the program ends.
+4. **Analysis and diagrams**  
+   The API uses `Scheduler`, `PrecedenceGraph`, `HistoryDiagram`, and `locking` to compute all results. The frontend renders precedence graph, history diagram, and 2PL lock history in the browser from the JSON returned by the API.
