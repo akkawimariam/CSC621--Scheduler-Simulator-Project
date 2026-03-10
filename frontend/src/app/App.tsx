@@ -63,11 +63,18 @@ export default function App() {
     }
   };
 
-  const handleAnalyze = async (numTransactions: number, scheduleStr: string) => {
+  const handleAnalyze = async (
+    numTransactions: number,
+    scheduleStr: string,
+    transactions?: string[] | null
+  ) => {
     setAnalysisError(null);
     setAnalyzing(true);
     try {
-      const { result, operations, numTransactions: n } = await analyzeSchedule(scheduleStr.trim());
+      const { result, operations, numTransactions: n } = await analyzeSchedule(
+        scheduleStr.trim(),
+        transactions ?? undefined
+      );
       setAnalysisData({
         result,
         schedule: scheduleStr.trim(),
@@ -234,9 +241,11 @@ export default function App() {
                 <p className="text-sm text-neutral-600">
                   {totalRun > 0 ? (
                     <>
-                      <span className="text-success font-medium">{passedCount} passed</span>
+                      <span className="font-medium text-neutral-800">
+                        {passedCount} of {totalRun} tests passed
+                      </span>
                       {failedCount > 0 && (
-                        <>, <span className="text-error-600 font-medium">{failedCount} failed</span></>
+                        <span className="text-error-600 font-medium"> ({failedCount} failed)</span>
                       )}
                       {multipleResults.length > 0 && (
                         <> — Viewing {currentResultIndex + 1} of {multipleResults.length}: {multipleResults[currentResultIndex].testCase.name}</>

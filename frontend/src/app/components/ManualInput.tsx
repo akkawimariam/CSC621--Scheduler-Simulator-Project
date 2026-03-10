@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from './ui/alert';
 
 interface ManualInputProps {
   onBack: () => void;
-  onAnalyze: (numTransactions: number, schedule: string) => void;
+  onAnalyze: (numTransactions: number, schedule: string, transactions?: string[]) => void;
   analysisError?: string | null;
   clearAnalysisError?: () => void;
   analyzing?: boolean;
@@ -58,7 +58,7 @@ export function ManualInput({ onBack, onAnalyze, analysisError, clearAnalysisErr
     }
     
     setError('');
-    onAnalyze(num, schedule.trim());
+    onAnalyze(num, schedule.trim(), transactions.filter((t) => t.trim() !== ''));
   };
 
   const handleExample = () => {

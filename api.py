@@ -16,6 +16,7 @@ from scheduler import Scheduler
 from schedule_generator import ScheduleGenerator
 from schedule_generator_2pl import generate_schedule_with_protocol
 from locking import Strict2PLHistory, validate_2pl_strict2pl
+from schedule_validator import validate_schedule_against_transactions
 
 # ---------------------------------------------------------------------------
 # Logging: all UI interactions logged to terminal for debugging
@@ -115,6 +116,9 @@ def _collect_violations(results):
 def analyze():
     """
     POST body: { "schedule": "start1 r1[x] w1[x] start2 r2[x] w2[y] c1 c2" }
+    Optional: "transactions": ["T1: start1 r1[x] w1[x] c1", "T2: ..."] for manual-input validation.
+    When transactions are provided, the schedule is validated against them (dependency-based)
+    before running analysis; if invalid, returns 400 with error message.
     Returns full analysis result as JSON.
     """
     try:
@@ -123,6 +127,13 @@ def analyze():
         if not schedule_str:
             log.warning("POST /api/analyze: empty schedule")
             return jsonify({"error": "Missing or empty 'schedule' in body"}), 400
+
+        transactions_raw = data.get("transactions")
+        if transactions_raw and isinstance(transactions_raw, list) and len(transactions_raw) > 0:
+            valid, err = validate_schedule_against_transactions(transactions_raw, schedule_str)
+            if not valid:
+                log.warning("POST /api/analyze validation failed: %s", err)
+                return jsonify({"error": err}), 400
 
         log.info("POST /api/analyze | schedule length=%d", len(schedule_str))
 

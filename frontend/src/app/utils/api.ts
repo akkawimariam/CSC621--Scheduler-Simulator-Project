@@ -117,15 +117,22 @@ function mapAnalyzeResponse(data: any): { result: AnalysisResult; operations: Op
   };
 }
 
-export async function analyzeSchedule(scheduleStr: string): Promise<{
+export async function analyzeSchedule(
+  scheduleStr: string,
+  transactions?: string[] | null
+): Promise<{
   result: AnalysisResult;
   operations: Operation[];
   numTransactions: number;
 }> {
+  const body: { schedule: string; transactions?: string[] } = { schedule: scheduleStr };
+  if (transactions && transactions.length > 0) {
+    body.transactions = transactions;
+  }
   const res = await fetch(`${API_BASE}/api/analyze`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ schedule: scheduleStr }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
