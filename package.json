@@ -3,7 +3,9 @@
   "private": true,
   "description": "Transaction Scheduling and Serializability Analysis - run full stack (API + frontend) with one command",
   "scripts": {
-    "dev": "concurrently -n api,web -c blue,green \"python api.py\" \"cd frontend && npm run dev\""
+    "dev": "node dev.js",
+    "dev:api": "python api.py",
+    "dev:web": "npm run dev --prefix frontend"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

@@ -15,7 +15,8 @@ A Python-based transaction scheduler simulator that analyzes database schedules 
 ├── test_cases.py         # Built-in test cases (used by API for Run Test Cases)
 ├── api.py                # Flask API for the web UI (analyze, test-cases, generate); logs all requests
 ├── requirements-api.txt  # Flask + flask-cors for the API
-├── package.json          # Root script: npm run dev starts both API and frontend (concurrently)
+├── package.json          # Root: npm run dev starts both API and frontend in one terminal
+├── dev.js                 # One-command runner (API + frontend); works on Windows
 ├── frontend/             # React (Vite) web UI; calls the API for analysis
 └── README.md             # This file
 ```
@@ -123,19 +124,19 @@ The application is **web UI only**. You can run the full stack (API + frontend) 
 
 ### Option A: One command (recommended)
 
-From the **project root** (where `api.py` and this `package.json` live):
+From the **project root** (where `api.py`, `package.json`, and `dev.js` live):
 
 ```bash
-# First time only: install Python API deps + root script runner + frontend deps
+# First time only: install Python API deps, root deps, and frontend deps
 pip install -r requirements-api.txt
 npm install
 cd frontend && npm install && cd ..
 
-# Start both API and frontend (one terminal)
+# Start both API and frontend in one terminal
 npm run dev
 ```
 
-The API runs at `http://localhost:5000` and the React app at `http://localhost:5173`. Open the frontend URL in your browser.
+This runs `dev.js`, which starts the Flask API and the React (Vite) dev server together. The API runs at **http://localhost:5000** and the React app at **http://localhost:5173**. Open the frontend URL in your browser. Press **Ctrl+C** in the terminal to stop both.
 
 ### Option B: Two terminals
 

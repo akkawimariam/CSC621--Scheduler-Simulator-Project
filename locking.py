@@ -145,36 +145,43 @@ def validate_2pl_strict2pl(schedule: Schedule) -> Tuple[bool, bool, List[Dict[st
             continue
 
         if op.is_commit():
-            # Strict 2PL: release all locks at commit
+            # Strict 2PL (Ch.3): scheduler releases locks after DM acks commit — record commit first, then releases
+            steps.append({"event": str(op), "explanation": f"Schedule operation {op}: T{tid} commits (Strict 2PL: locks released after commit)."})
             held = locks_by_item.copy()
+            release_steps = []
             for item, holders in list(held.items()):
                 if tid not in holders:
                     continue
                 mode = holders[tid]
                 if mode == "r":
-                    steps.append({"event": f"ru{tid}[{item}]", "explanation": f"T{tid} releases read lock on {item} at commit."})
+                    release_steps.append({"event": f"ru{tid}[{item}]", "explanation": f"T{tid} releases read lock on {item} after commit."})
                 else:
-                    steps.append({"event": f"wu{tid}[{item}]", "explanation": f"T{tid} releases write lock on {item} at commit."})
+                    release_steps.append({"event": f"wu{tid}[{item}]", "explanation": f"T{tid} releases write lock on {item} after commit."})
                 del locks_by_item[item][tid]
                 if not locks_by_item[item]:
                     del locks_by_item[item]
-            steps.append({"event": str(op), "explanation": f"Schedule operation {op}: T{tid} commits (Strict 2PL: all locks released at commit)."})
+            release_steps.sort(key=lambda s: s["event"])
+            steps.extend(release_steps)
             continue
 
         if op.is_abort():
+            # Strict 2PL (Ch.3): scheduler releases locks after DM acks abort — record abort first, then releases
+            steps.append({"event": str(op), "explanation": f"Schedule operation {op}: T{tid} aborts (Strict 2PL: locks released after abort)."})
             held = locks_by_item.copy()
+            release_steps = []
             for item, holders in list(held.items()):
                 if tid not in holders:
                     continue
                 mode = holders[tid]
                 if mode == "r":
-                    steps.append({"event": f"ru{tid}[{item}]", "explanation": f"T{tid} releases read lock on {item} at abort."})
+                    release_steps.append({"event": f"ru{tid}[{item}]", "explanation": f"T{tid} releases read lock on {item} after abort."})
                 else:
-                    steps.append({"event": f"wu{tid}[{item}]", "explanation": f"T{tid} releases write lock on {item} at abort."})
+                    release_steps.append({"event": f"wu{tid}[{item}]", "explanation": f"T{tid} releases write lock on {item} after abort."})
                 del locks_by_item[item][tid]
                 if not locks_by_item[item]:
                     del locks_by_item[item]
-            steps.append({"event": str(op), "explanation": f"Schedule operation {op}: T{tid} aborts (Strict 2PL: all locks released at abort)."})
+            release_steps.sort(key=lambda s: s["event"])
+            steps.extend(release_steps)
             continue
 
         # Data operation on item x
